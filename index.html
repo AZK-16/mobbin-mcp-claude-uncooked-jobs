@@ -3,6 +3,52 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+/* arriving back from the founder's letter. two jobs:
+   1. place the viewport. this page suppresses the browser's own fragment jump
+      (verified: scrollY stays 0 on a cold load of #mission), so the scroll is
+      done explicitly.
+   2. fade in, so the reader lands mid-page instead of being dropped there.
+   the scroll happens while the page is still at opacity 0, so the jump itself
+   is never visible. every route back to opacity 1 is guarded -- load, a hard
+   timeout, and a bail-out for reduced motion -- so the page can never be
+   stranded invisible if something stalls. */
+(function () {
+  // only run for a genuine return trip from the founder's letter, which leaves a
+  // one-shot flag. reading it consumes it, so a refresh afterwards just restores
+  // wherever the reader was, the way any other page would.
+  var go = null;
+  try { go = sessionStorage.getItem('uc-to-mission'); sessionStorage.removeItem('uc-to-mission'); } catch (e) {}
+  if (!go) return;
+
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var root = document.documentElement, landed = false, placedAt = -1;
+  if (!reduce) root.style.opacity = '0';
+
+  function place() {
+    var m = document.getElementById('mission');
+    if (!m) return;
+    placedAt = Math.round(m.getBoundingClientRect().top + window.pageYOffset);
+    window.scrollTo(0, placedAt);
+  }
+  function land() {
+    if (landed) return; landed = true;
+    place();
+    if (reduce) return;
+    root.style.transition = 'opacity .5s ease';
+    root.style.opacity = '1';
+    setTimeout(function () { root.style.transition = ''; root.style.opacity = ''; }, 700);
+  }
+
+  window.addEventListener('load', function () {
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      if (landed && placedAt >= 0 && Math.abs(window.pageYOffset - placedAt) < 4) place();
+      land();
+    }); });
+  });
+  setTimeout(land, 1800);
+})();
+</script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -16,7 +62,7 @@
 <script src="./image-slot.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{background:#fcfcfa;max-width:100%;overflow-x:clip;}
+  html,body{background:#fff;max-width:100%;overflow-x:clip;}
   a{text-decoration:none;color:#E62B15;}
   a:hover{color:#ff5236;}
   @keyframes heroUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
@@ -41,7 +87,7 @@
      just at the very edges of it. structural selectors (not new classes)
      since the CTA/tracker are both plain <a> tags. */
   @media (min-width:901px){
-    .hero-copy h1{font-size:clamp(35px,3.875vw,62px) !important;}
+    .hero-copy h1{font-size:clamp(38px,4.25vw,68px) !important;}
     .hero-copy p{font-size:clamp(11px,1.231vw,16px) !important;}
     .hero-copy a:first-of-type{font-size:clamp(10.5px,1.154vw,15px) !important;}
     .hero-copy > div{font-size:clamp(9px,1vw,13px) !important;}
@@ -264,6 +310,23 @@
     .passport-track{height:120px !important;}
   }
 
+  /* passport, tablet: stacked rows give the text the full column width, but the
+     paragraph still carries its desktop 38ch measure, which left a deep gutter
+     either side. widen the measure here only -- below 640px the 100% cap binds
+     anyway, so phones are unaffected. */
+  @media (min-width:640px) and (max-width:820px){
+    /* justified body with a centred last line -- the same treatment the mission
+       paragraph uses. only the <p> is justified; the step number and title keep
+       the centring they inherit from .passport-text. */
+    .passport-text p{max-width:min(58ch,100%) !important;text-align:justify;text-align-last:center;}
+  }
+
+  /* passport, desktop: a little more air before step 03, where the passport
+     itself first appears -- the rows either side of it stay on the container gap */
+  @media (min-width:901px){
+    .passport-row-3{margin-top:clamp(16px,2.2vh,30px);}
+  }
+
   /* difference: stack the 3 cards instead of squeezing them into one row
      (each card's info bubble has a 240px floor, so 3-up starts clipping below ~900px) */
   @media (max-width:900px){
@@ -335,8 +398,9 @@
     .belief-vdiv{width:100% !important;height:1px !important;}
     .belief-body-col{padding-left:0 !important;padding-top:clamp(20px,3vw,28px) !important;}
   }
-  /* tablet only: the dark half's 4 body paragraphs split into two columns
-     (p1+p2 left, quote+p4 right). Each pair is its own flex column
+  /* tablet only: the dark half's body splits into two columns -- the opening
+     paragraph and the 1:30am quote on the left, the closing paragraph on the
+     right. Each side is its own flex column
      (.belief-dark-group) so the two sides size to their OWN content height
      independently -- a shared grid row (the previous approach) would force
      both columns' first row to match the taller one, leaving a gap under the
@@ -363,28 +427,135 @@
     .social-btn{width:44px !important;height:44px !important;}
   }
 
-  /* early users: each quote is the chat-message component from how it works,
-     rebuilt in markup rather than screenshotted -- same #e1e1e8 fill as the
-     incoming bubble there. the tail is the small bottom-left corner the
-     difference-section speech bubbles already use, rather than a masked
-     pseudo-element, which would punch a solid patch through the page's
-     grid background. */
-  .tmn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(20px,2.4vw,34px);width:min(1160px,92vw);margin:clamp(34px,5vh,60px) auto 0;align-items:stretch;text-align:left;}
-  /* flex:1 on the bubble evens the bubble heights across the row, so the
-     avatar/attribution rows line up instead of stepping with quote length */
-  .tmn{display:flex;flex-direction:column;gap:14px;margin:0;height:100%;}
-  .tmn-bubble{position:relative;flex:1;margin:0;background:#e1e1e8;border-radius:20px 20px 20px 5px;padding:clamp(16px,1.5vw,20px) clamp(18px,1.7vw,23px);font-weight:500;font-size:clamp(14px,1.05vw,15.5px);line-height:1.55;letter-spacing:-0.005em;color:#111;text-wrap:pretty;}
-  .tmn-meta{display:flex;align-items:center;gap:11px;padding-left:4px;}
-  .tmn-avatar{flex:none;width:38px;height:38px;border-radius:50%;background:#f4f4f2;border:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;color:#9a9aa0;font-weight:700;font-size:13px;letter-spacing:-0.01em;overflow:hidden;}
-  .tmn-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
-  .tmn-who{display:flex;flex-direction:column;gap:3px;min-width:0;}
-  .tmn-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
-  .tmn-name{font-weight:700;font-size:13.5px;letter-spacing:-0.015em;color:#111;}
-  .tmn-track{font-weight:600;font-size:11.5px;color:#5f5f66;background:#f4f4f2;border:1px solid rgba(0,0,0,0.08);border-radius:100px;padding:2.5px 9px;white-space:nowrap;}
-  .tmn-context{font-weight:500;font-size:12.5px;line-height:1.4;color:#9a9aa0;}
+  /* early users: editorial quote cards. card reads top to bottom as avatar +
+     track, then the quote, then attribution sitting on the card's floor behind
+     a hairline. */
+  /* stroke + lift live here, not on the card: a mask clips its own element's
+     filter output, so a filter on .tmn was being erased at the card edge. the
+     grid isn't masked, and its only children are the three opaque cards, so the
+     four 1px offset shadows trace each card's notched silhouette and the fifth
+     casts the drop shadow from that outlined shape. */
+  .tmn-grid{filter:drop-shadow(1px 0 0 #E2E2E1) drop-shadow(-1px 0 0 #E2E2E1) drop-shadow(0 1px 0 #E2E2E1) drop-shadow(0 -1px 0 #E2E2E1) drop-shadow(0 4px 10px rgba(20,20,30,0.05));display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,1.9vw,28px);width:min(1160px,92vw);margin:clamp(38px,5.5vh,66px) auto 0;align-items:stretch;text-align:left;}
+  /* the paper grain lives on the cards only -- the page behind them is flat.
+     the tile is opaque and averages #fafafa, so it sets the card surface;
+     the colour below it is just the pre-load fallback. */
+  /* ticket shape: four radial gradients punch a 17px concave notch out of each
+     corner. the stroke and shadow can't live here -- a mask clips its own
+     element's filter output -- so they sit on .tmn-grid instead. */
+  .tmn{--pad:clamp(20px,1.9vw,26px);
+    display:flex;flex-direction:column;margin:0;height:100%;background:#fafafa url('uploads/paper-grain-tile.webp') 0 0 / 384px 384px repeat;border:0;padding:var(--pad);
+    -webkit-mask:radial-gradient(circle 17px at 0 0,transparent 98%,#000 100%) 0 0/51% 51% no-repeat,radial-gradient(circle 17px at 100% 0,transparent 98%,#000 100%) 100% 0/51% 51% no-repeat,radial-gradient(circle 17px at 0 100%,transparent 98%,#000 100%) 0 100%/51% 51% no-repeat,radial-gradient(circle 17px at 100% 100%,transparent 98%,#000 100%) 100% 100%/51% 51% no-repeat;
+    mask:radial-gradient(circle 17px at 0 0,transparent 98%,#000 100%) 0 0/51% 51% no-repeat,radial-gradient(circle 17px at 100% 0,transparent 98%,#000 100%) 100% 0/51% 51% no-repeat,radial-gradient(circle 17px at 0 100%,transparent 98%,#000 100%) 0 100%/51% 51% no-repeat,radial-gradient(circle 17px at 100% 100%,transparent 98%,#000 100%) 100% 100%/51% 51% no-repeat;
+}
+  /* avatar left, track chip right */
+  .tmn-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .tmn-avatar{flex:none;width:40px;height:40px;border-radius:50%;background:#f4f4f2;border:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;color:#b0b0b6;font-weight:700;font-size:13px;letter-spacing:-0.01em;overflow:hidden;}
+  .tmn-avatar img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;}
+  .tmn-track{display:inline-flex;align-items:center;gap:6px;flex:none;background:#fff;border:1px solid rgba(0,0,0,0.09);border-radius:100px;padding:7px 14px;font-weight:600;font-size:12px;letter-spacing:-0.01em;color:#3f3f46;white-space:nowrap;box-shadow:0 2px 5px -3px rgba(20,20,30,.16);}
+  /* line-height .6 crops the glyph's serif leading so it sits tight to the quote */
+  .tmn-mark{font-family:'Instrument Serif',serif;font-size:clamp(42px,4.1vw,57px);line-height:.6;letter-spacing:-0.02em;color:#E62B15;margin-top:clamp(22px,2.26vw,33px);}
+  /* flex:1 drops the rule + attribution to the card floor, so they line up
+     across the row however long each quote runs */
+  .tmn-bubble{flex:1;margin:clamp(-15px,-1.02vw,-13px) 0 0;font-weight:500;font-size:clamp(16px,1.35vw,19px);line-height:1.45;letter-spacing:-0.015em;color:#504E4E;text-wrap:pretty;}
+  .tmn-meta{display:flex;flex-direction:column;gap:3px;margin:clamp(16px,1.7vw,24px) calc(-1 * var(--pad)) 0;padding:clamp(19px,1.9vw,26px) var(--pad) 0;border-top:0;background:repeating-linear-gradient(to right,rgba(0,0,0,0.26) 0 9px,transparent 9px 20px) 0 0/100% 1px no-repeat;}
+  .tmn-name{font-weight:700;font-size:12.5px;letter-spacing:-0.015em;color:#111;}
+  .tmn-context{font-weight:500;font-size:11.5px;line-height:1.45;color:#9a9aa0;}
+  /* FAQ: the inverse of .sec-grid. the question column is min(760px,92vw)
+     centred, so the ruling sits in the gutters either side of it and clears
+     out behind the copy. the stops are calc'd off the centre line so they
+     track the column at any width, and the whole layer is hidden below 1000px
+     where the gutters get too narrow to hold it. */
+  .faq-grid{position:absolute;inset:0;z-index:-1;pointer-events:none;display:none;
+    background-image:linear-gradient(to right,rgba(242,232,226,0.32) 1px,transparent 1px),
+                     linear-gradient(to bottom,rgba(242,232,226,0.32) 1px,transparent 1px);
+    background-size:48px 48px;background-position:center top;}
+  @media (min-width:1000px){
+    .faq-grid{display:block;
+      -webkit-mask-image:linear-gradient(to right,transparent 0,#000 26px,#000 calc(50% - 400px),transparent calc(50% - 374px),transparent calc(50% + 374px),#000 calc(50% + 400px),#000 calc(100% - 26px),transparent 100%);
+              mask-image:linear-gradient(to right,transparent 0,#000 26px,#000 calc(50% - 400px),transparent calc(50% - 374px),transparent calc(50% + 374px),#000 calc(50% + 400px),#000 calc(100% - 26px),transparent 100%);}
+  }
+
+  /* barely-there ruling behind a section, faded out at both sides so it
+     dissolves into the page rather than stopping at a hard edge. z-index:-1
+     keeps it under the content; each host section carries isolation:isolate so
+     that -1 can't escape behind the page background. */
+  .sec-grid{position:absolute;inset:0;z-index:-1;pointer-events:none;
+    background-image:linear-gradient(to right,rgba(242,232,226,0.32) 1px,transparent 1px),
+                     linear-gradient(to bottom,rgba(242,232,226,0.32) 1px,transparent 1px);
+    background-size:48px 48px;background-position:center top;
+    -webkit-mask-image:linear-gradient(to right,transparent 0,#000 20%,#000 80%,transparent 100%);
+            mask-image:linear-gradient(to right,transparent 0,#000 20%,#000 80%,transparent 100%);}
+
+  /* mission: barely-there ruling behind the section, faded out at both sides so
+     it dissolves into the flat page rather than stopping at a hard edge.
+     z-index:-1 keeps it under the content; the section carries isolation:isolate
+     so that -1 can't escape behind the page background. */
+  .mission-grid{position:absolute;inset:0;z-index:-1;pointer-events:none;
+    background-image:linear-gradient(to right,rgba(242,232,226,0.45) 1px,transparent 1px),
+                     linear-gradient(to bottom,rgba(242,232,226,0.45) 1px,transparent 1px);
+    background-size:48px 48px;background-position:center top;
+    /* two fades: sides, and a vertical one that holds the ruling all the way
+       past the sources line (it sits at ~91% of the section) then drops it over
+       the trailing padding, before the testimonial glyphs bleed up into this
+       section. the layers must intersect rather than add, or the union would
+       defeat both. */
+    -webkit-mask-image:linear-gradient(to right,transparent 0,#000 20%,#000 80%,transparent 100%),
+                       linear-gradient(to bottom,#000 0,#000 91%,transparent 100%);
+            mask-image:linear-gradient(to right,transparent 0,#000 20%,#000 80%,transparent 100%),
+                       linear-gradient(to bottom,#000 0,#000 91%,transparent 100%);
+    -webkit-mask-composite:source-in;mask-composite:intersect;}
+  /* decorative glyph layer. absolutely placed, so each piece gets its own size
+     and angle; the heading and cards are lifted above it with z-index. shown
+     only while the cards sit three across -- once they stack at 900px the
+     whitespace beside them is gone, so the layer is hidden entirely. */
+  /* deliberately not clipped: glyphs are meant to run off the edge rather than
+     be sliced at the section box. the page wrapper's overflow-x:clip keeps
+     the ones that overhang from creating a horizontal scrollbar. */
+  .tmn-deco{position:absolute;inset:0;z-index:0;pointer-events:none;display:none;}
+  /* #EDEBE6 is baked into both SVGs and an <img> can't be recoloured from
+     CSS, so opacity is what tunes them against the page colour. */
+  .tmn-deco img{position:absolute;display:block;opacity:0.7;}
+  .tmn-head,.tmn-grid{position:relative;z-index:1;}
+  @media (min-width:901px){
+    .tmn-deco{display:block;}
+    /* clustered in the whitespace beside the title, then drifting down behind
+       the cards -- the cards are opaque, so they only show in the gaps */
+    .dc-ga{left:51%;top:-2%;width:clamp(120px,10.5vw,186px);transform:rotate(-15deg);}
+    .dc-gb{left:74%;top:-8%;width:clamp(150px,13.5vw,238px);transform:rotate(10deg);}
+    .dc-gc{left:62%;top:33%;width:clamp(170px,15.5vw,272px);transform:rotate(-7deg);}
+    .dc-gd{left:96%;top:14%;width:clamp(130px,11.5vw,204px);transform:rotate(19deg);}
+    .dc-sa{left:68%;top:10%;width:clamp(24px,2.2vw,38px);transform:rotate(0deg);}
+    .dc-sb{left:84%;top:46%;width:clamp(28px,2.6vw,45px);transform:rotate(14deg);}
+    .dc-sc{left:101%;top:2%;width:clamp(20px,1.9vw,32px);transform:rotate(-12deg);}
+    .dc-sd{left:57%;top:62%;width:clamp(22px,2vw,34px);transform:rotate(8deg);}
+    /* these two bracket the glyph bleeding off the right edge, which sits
+       between 11% and 41% of the section height */
+    .dc-se{left:95.5%;top:2%;width:clamp(21px,1.9vw,33px);transform:rotate(-9deg);}
+    .dc-sf{left:94.5%;top:46%;width:clamp(24px,2.2vw,38px);transform:rotate(11deg);}
+    /* added after the title shrank. they live in the gap between the title's
+       right edge and the existing cluster, which is ~9% wide at 1280px+ but
+       collapses to ~4% by 901px as the heading block widens -- so they only
+       appear where there is genuinely room for them. */
+    .dc-ge{left:40%;top:17%;width:clamp(68px,6.5vw,110px);transform:rotate(20deg);}
+    .dc-sg{left:44.5%;top:0%;width:clamp(20px,1.7vw,29px);transform:rotate(9deg);}
+  }
+  /* cards fade in one after another. the stagger lives here rather than in the
+     data-di the reveal observer reads: sweepReveals() also flips .dfin elements
+     to opacity:1 on every scroll frame without setting a delay, and it usually
+     wins that race, so the observer's stagger never lands. !important is needed
+     to beat the inline `transition` shorthand, which pins delay to 0s. */
+  .tmn-grid .tmn:nth-of-type(1){transition-delay:0ms !important;}
+  .tmn-grid .tmn:nth-of-type(2){transition-delay:210ms !important;}
+  .tmn-grid .tmn:nth-of-type(3){transition-delay:420ms !important;}
+  /* scoped through .tmn-deco img, which sets display:block and is more
+     specific than a bare class -- a plain .dc-ge rule loses to it. */
+  @media (max-width:1199px){ .tmn-deco img.dc-ge,.tmn-deco img.dc-sg{display:none;} }
+  /* the heading is width-matched to the grid so both share one left edge */
+  .tmn-head{width:min(1160px,92vw);margin:0 auto;text-align:left;}
   /* same 900px stack point the difference grid uses */
   @media (max-width:900px){
-    .tmn-grid{grid-template-columns:1fr;gap:clamp(18px,3vh,26px);width:min(560px,92vw);}
+    .tmn-grid{grid-template-columns:1fr;gap:clamp(16px,2.6vh,22px);width:min(560px,92vw);}
+    .tmn-head{width:min(560px,92vw);}
   }
 
   /* FAQ: native <details>/<summary>, so it opens without JS and is keyboard
@@ -403,18 +574,55 @@
   .faq-a{margin:0;padding:0 clamp(30px,3.6vw,44px) clamp(18px,1.9vw,23px) 2px;font-weight:400;font-size:clamp(14px,1.1vw,15.5px);line-height:1.6;color:#5f5f66;text-wrap:pretty;}
   .faq-item[open] .faq-a{animation:faqIn .34s cubic-bezier(.22,.7,.3,1) both;}
   @keyframes faqIn{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:none;}}
+  /* proof strip pills: the silhouettes are inline SVG rather than image files,
+     so they inherit currentColor, stay crisp at any density and cost no extra
+     requests. the shapes are Natural Earth outlines simplified hard on purpose
+     -- at 24px, more coastline detail just turns to mud. each pill carries its
+     own --tilt so the row sits slightly off-square. */
+  .pfp-row{display:flex;align-items:center;justify-content:center;gap:clamp(8px,1vw,12px);flex-wrap:wrap;}
+  .pfp{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:100px;padding:7px 16px 7px 11px;box-shadow:0 8px 18px -10px rgba(20,20,30,.28),0 2px 4px -2px rgba(20,20,30,.1);font-weight:600;font-size:13.5px;letter-spacing:-0.01em;color:#3f3f46;white-space:nowrap;transform:rotate(var(--tilt,0deg));}
+  .pfp svg{flex:none;width:24px;height:24px;display:block;color:#8a8a92;overflow:visible;}
+  /* stroking the outline in the fill colour with round joins softens every
+     corner and closes the hairline inlets -- without it the simplified
+     coastline reads as jagged at 24px */
+  .pfp svg path{fill:currentColor;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;}
+  @media (max-width:480px){
+    .pfp{font-size:12.5px;padding:6px 13px 6px 9px;gap:7px;}
+    .pfp svg{width:21px;height:21px;}
+  }
+  /* desktop only: the eyebrow ends on "across", so the pills read as the rest of
+     that sentence instead of a separate row. below 901px it stays stacked, where
+     one line would not fit. the container's layout is inline, so these need
+     !important to win. */
+  @media (min-width:901px){
+    .pf-strip{flex-direction:row !important;align-items:center !important;gap:13px !important;}
+    /* the inline strip is ~37px shorter than the stacked one, and because the
+       hero centres its content, half of that reappears as dead space under it.
+       trimming the hero's bottom padding puts the gap back where it sat before
+       the pills came up onto the line. */
+    section[data-screen-label="Hero"]{padding-bottom:20px !important;}
+    /* the hero centres its content, so trimming the padding alone only moves the
+       gap at half rate -- the rest is put back above the strip, which keeps the
+       space between the phone and the strip and takes it off the bottom. */
+    .pf-strip{margin-top:calc(clamp(56px,7vh,100px) + 20px) !important;}
+    /* desktop has the room, so the pills sit a step larger here than on the
+       stacked layout. later in the sheet than the base .pfp rule, so it wins
+       on source order without !important. */
+    .pfp{font-size:15px;padding:9px 19px 9px 13px;gap:9px;}
+    .pfp svg{width:28px;height:28px;}
+  }
 </style>
 <template id="__bundler_thumbnail" data-bg-color="#f7f7f5">
 <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="240" fill="#f7f7f5"></rect><circle cx="120" cy="120" r="52" fill="#E62B15"></circle><text x="120" y="137" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="52" fill="#ffffff">u</text></svg>
 </template>
 </helmet>
 
-<div style="font-family:'Satoshi',system-ui,sans-serif;color:#111;background:#fafafa;background-image:linear-gradient(to right,rgba(0,0,0,0.035) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,0,0,0.035) 1px,transparent 1px);background-size:48px 48px;background-position:center top;overflow-x:clip;">
+<div style="font-family:'Satoshi',system-ui,sans-serif;color:#111;background:#fcfbf9;overflow-x:clip;">
 
   <!-- ===================== FIXED NAV ===================== -->
   <nav ref="{{ setNav }}" class="site-nav" aria-label="Main" style="position:fixed;top:26px;left:50%;transform:translateX(-50%);z-index:200;width:max-content;max-width:94%;display:flex;align-items:center;gap:28px;padding:6px 7px 6px 15px;backdrop-filter:blur(22px) saturate(2.2);-webkit-backdrop-filter:blur(22px) saturate(2.2);border:1px solid transparent;border-radius:100px;background-image:linear-gradient(180deg,rgba(255,255,255,0.86),rgba(255,255,255,0.80)),linear-gradient(180deg,#e7e7e9 0%,#DCDCDF 55%,#D0D0D4 100%);background-origin:border-box;background-clip:padding-box,border-box;box-shadow:0 8px 24px -7px rgba(20,20,30,0.16),0 3px 7px -1px rgba(20,20,30,0.09);transition:box-shadow .3s ease,transform .3s ease,background-image .45s ease;">
     <span class="nav-veil" style="position:absolute;inset:-1px;border-radius:100px;background:linear-gradient(180deg,rgba(30,30,34,0.90),rgba(30,30,34,0.86));opacity:0;transition:opacity .55s ease;pointer-events:none;"></span>
-    <div class="nav-logo-wrap" style="position:relative;display:flex;align-items:center;">
+    <a href="#" class="nav-logo-wrap" style="position:relative;display:flex;align-items:center;text-decoration:none;color:inherit;">
       <img class="nav-logo" src="uploads/m-nav-mark.png" alt="uncooked (BETA)" style="height:32px;width:auto;display:block;margin-right:-15px;transition:opacity .55s ease;">
       <img class="nav-logo-dark" src="uploads/m-nav-mark-dark.png" alt="" style="position:absolute;left:0;top:0;height:32px;width:auto;display:block;opacity:0;transition:opacity .55s ease;pointer-events:none;">
       <!-- the baked-in BETA badge in m-nav-mark-dark.png is a white pill; this masks it and
@@ -422,7 +630,7 @@
       <span class="nav-beta-dark" aria-hidden="true" style="position:absolute;left:115px;top:-2px;width:43px;height:21px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:#37373B;border:.5px solid #fff;opacity:0;transition:opacity .55s ease;pointer-events:none;">
         <span style="font-size:8px;font-weight:700;letter-spacing:0.03em;color:#fff;line-height:1;">BETA</span>
       </span>
-    </div>
+    </a>
     <span class="nav-div" style="position:relative;width:1px;height:24px;background:rgba(0,0,0,0.10);flex:none;transition:background .45s ease;"></span>
     <div class="nav-links" style="display:flex;align-items:center;gap:0;">
       <a href="#" class="nav-link nav-active" style="position: relative; font-weight: 600; font-size: 14.5px; color: #3A3A40; border-radius: 100px; padding: 10px 13px; transition: color .35s" style-hover="color:#111;">jobs</a>
@@ -450,7 +658,9 @@
   </nav>
 
   <!-- ===================== HERO ===================== -->
-  <section data-screen-label="Hero" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100svh;padding:140px 24px 40px;box-sizing:border-box;position:relative;">
+  <section data-screen-label="Hero" style="isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100svh;padding:140px 24px 40px;box-sizing:border-box;position:relative;">
+    <div class="sec-grid" aria-hidden="true"></div>
+
 
     <!-- simple two-column row: text | picture, wraps to a stack when tight
          (see .hero-row in the CSS) -->
@@ -459,13 +669,13 @@
       <div class="hero-copy">
 
         <!-- headline -->
-        <h1 style="margin:0;font-weight:600;letter-spacing:-0.035em;line-height:0.96;color:#111;font-size:clamp(46px,6.5vw,62px);">
+        <h1 style="margin:0;font-weight:600;letter-spacing:-0.035em;line-height:0.96;color:#111;font-size:clamp(50px,7.1vw,68px);">
           <span class="hu" style="display:block;animation-delay:.1s;">never get</span>
           <span class="hu" style="display:block;animation-delay:.25s;font-family:'Instrument Serif',serif;font-weight:400;font-style:italic;">ghosted</span>
         </h1>
 
         <!-- subcopy -->
-        <p class="hu" style="animation-delay:1.25s;margin:22px 0 0;font-weight:500;font-size:clamp(14px,1.1vw,16px);line-height:1.55;color:#5f5f66;text-wrap:pretty;">no CVs. no cover letters. no repeating yourself 140 times. apply from your phone. a guaranteed answer in 7 days.*</p>
+        <p class="hu" style="animation-delay:1.25s;margin:22px 0 0;font-weight:500;font-size:clamp(14px,1.1vw,16px);line-height:1.55;color:#5f5f66;text-wrap:pretty;">no CVs. no cover letters. no repeating yourself 140 times. apply from your phone. a guaranteed answer in 7 days on every role through us.</p>
 
         <!-- CTA -->
         <a href="https://tally.so/r/7RRlp9" target="_blank" rel="noopener" class="hu" style="animation-delay:1.4s;margin-top:26px;display:inline-flex;align-items:center;justify-content:center;background:#E62B15;color:#fff;font-weight:700;font-size:15px;padding:13px 30px;border-radius:100px;transition:background .2s,transform .2s;box-shadow:0 10px 24px -8px rgba(230,43,21,.5);" style-hover="background:#c31f0c;transform:translateY(-2px);color:#fff;">get seen</a>
@@ -477,7 +687,7 @@
         <a href="#" class="hu" style="animation-delay:1.7s;margin-top:16px;font-weight:600;font-size:13px;color:#5f5f66;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:color .2s;" style-hover="color:#E62B15;">or start with the tracker: 6,000+ live startup jobs. save the ones you like →</a>
 
         <!-- disclaimer -->
-        <div class="hu" style="animation-delay:1.85s;margin-top:25px;font-weight:500;font-size:12px;color:#b0b0b6;">*Applies to startups directly partnered with Uncooked.</div>
+        <div class="hu" style="animation-delay:1.85s;margin-top:25px;font-weight:500;font-size:12px;color:#b0b0b6;">tracker roles are external. you apply direct, so the 7 day answer doesn't cover them.</div>
 
       </div>
 
@@ -495,25 +705,12 @@
     </div>
 
     <!-- proof strip -->
-    <div class="hu" style="animation-delay:1.85s;margin-top:clamp(56px,7vh,100px);display:flex;flex-direction:column;align-items:center;gap:20px;">
-      <div style="font-weight:600;font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:#b0b0b6;">trusted by students &amp; grads from</div>
-      <div style="position:relative;width:min(720px,88vw);overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent 100%);">
-        <div class="pf-track" style="display:flex;align-items:center;gap:52px;width:max-content;will-change:transform;">
-          <img src="uploads/oxford-008c2d1c.webp" alt="University of Oxford" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/cambridge.webp" alt="University of Cambridge" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/imperial-optimized.webp" alt="Imperial College London" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/ucl-logo-primary.svg" alt="UCL" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/edinburgh.webp" alt="The University of Edinburgh" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/kcl (1).webp" alt="King's College London" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/manchester.webp" alt="The University of Manchester" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/oxford-008c2d1c.webp" alt="University of Oxford" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/cambridge.webp" alt="University of Cambridge" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/imperial-optimized.webp" alt="Imperial College London" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/ucl-logo-primary.svg" alt="UCL" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/edinburgh.webp" alt="The University of Edinburgh" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/kcl (1).webp" alt="King's College London" style="flex:none;height:44px;width:auto;display:block;">
-          <img src="uploads/manchester.webp" alt="The University of Manchester" style="flex:none;height:44px;width:auto;display:block;">
-        </div>
+    <div class="hu pf-strip" style="animation-delay:1.85s;margin-top:clamp(56px,7vh,100px);display:flex;flex-direction:column;align-items:center;gap:20px;">
+      <div style="font-weight:600;font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:#b0b0b6;">students &amp; grads from 55+ universities in</div>
+      <div class="pfp-row">
+        <span class="pfp" style="--tilt:-2.5deg;"><svg viewBox="-2 -2 104 104" aria-hidden="true"><path d="M52.9,81.6L48.4,84.3L46.4,84L42.6,81.1L39,80.2L36.8,81.4L34.2,78.4L35.5,77.1L40.6,74.8L43.6,70.9L42.8,66.5L38.7,67.7L42.8,63L49.3,61L51,57.1L50.3,55.1L51.4,51.9L49.4,52.5L46.6,48.5L47.6,42.7L44.1,44.8L40.3,45L38.3,43.9L37.6,45.7L36.2,43.7L39.4,36.3L38.1,34L38.5,29.9L35.9,31.8L36.4,29.1L34.8,30.4L35,32.4L33.6,37.5L32.2,37.3L33.5,29.7L36.5,21.6L33.5,24.1L30.5,21.9L34.4,16L33,14.3L34.4,12.3L33.4,10.9L34.4,8.5L37.1,8.6L35.7,6.6L36.2,4.4L38.2,4.1L37.9,1.1L40.1,1.3L50.2,0L49.2,3.6L44.4,7.8L45.2,9.5L43.4,12.2L48,10.8L50,11.2L56.3,10.8L58.2,13.2L56.7,16L55.2,20.6L53.1,24.1L49.1,26.2L52.8,27L48.2,30.3L50.2,31.2L53.1,30.3L56.1,31.8L59.4,35.6L62,44.8L66.2,47.8L70.4,52.2L69.6,53.3L72,58L69.2,57.2L72.2,59.7L73.9,63.2L71.9,66.2L73.6,67.3L75.5,65.4L78.9,65.3L83.3,67.4L84.2,70.6L83.1,75.2L81.3,78.1L77.5,79.7L78.7,81.4L76.5,82.2L77.3,83.7L82.6,83.6L82.6,85.8L74.1,91.1L71.1,90.6L66.8,91.4L62.1,89.9L61.4,91.7L57.6,92L57.6,93.4L53.9,93.3L50.5,92.2L47.5,93.1L46.2,96.7L44.6,97.8L41.8,95.9L37.6,97L33.8,100L31.3,97.9L33.1,97.4L38.8,91.3L39.3,89L41.8,86.6L49.5,86.5L54.6,80.2ZM31,2.7L28.6,5.7L29.4,6.6L25.9,9.6L26.7,7.6L25.5,6.6L25.9,4L30.8,1.1ZM28.5,52.4L25.6,52.6L23.1,48.4L20.8,51.6L17.5,50.3L15.8,47.9L18.5,45.7L22.4,40.4L27.4,38.9L29.7,39.3L32.3,44.1L31.1,45.6L33.1,45.9L32.8,50.4L29.9,52.9Z"/></svg>UK</span>
+        <span class="pfp" style="--tilt:1.5deg;"><svg viewBox="-2 -2 104 104" aria-hidden="true"><path d="M22.7,53.7L21.5,54.1L19.5,52.5L18.9,52.7L18.5,51.8L20.2,51.4L21.1,50.6L21.1,49.5L20.1,49.5L21.4,48.6L23,48.5L24,46.5L23.5,46.5L23.1,45.4L23.7,44.1L22.7,44.4L20.9,43.7L22.1,42.1L22.3,40.5L21.3,40.9L20.3,41.9L21.1,40.2L22.3,38.4L21.4,38.8L20.9,38.1L22.1,36.9L22.6,35.1L23.2,35.3L23.2,34.3L23.9,33.6L26.8,34L26.4,34.9L25,35.6L24.5,36.6L25.7,36.5L27.6,37L27.9,37.7L26.1,40L25,40.2L25.8,40.6L24.5,41.2L25.7,41.4L26.9,43.1L27,45.4L28.5,47.6L28.3,47.9L28.7,50.5L28.1,51.1L29.8,51.3L30.7,52L30.7,52.8L29.6,54.5L28.6,54.6L28.4,55.6L29.6,55.8L29.5,56.4L27.2,57.1L25.4,56.8L24.4,56.2L23.1,56.8L21.5,56.1L20.8,56.1L19.8,57.1L19.3,56.5L17.1,57L17.1,56.3L18.8,55.2L19.8,54.2L21.6,54.6ZM17.8,42.1L19.6,42.2L20.1,44L19.7,45.1L18.6,45.3L18,48.6L17,50.3L14.8,50.1L12.2,50.9L10.4,50.6L10.1,50.1L10.9,49.7L9.9,49.2L10.9,48.7L10.1,48.5L11.8,47.8L12.8,46.5L11.9,44.8L12.8,43.5L12.7,42.9L15,43.7L16,42.9L15.1,42.4L16.3,41.4ZM81.8,76.5L81.7,77.6L80.7,78.4L80.9,79.6L80.2,80.6L81.5,81.7L79.9,81.7L78.5,82.3L78.1,83.1L78.8,83.9L77.9,86L75.8,85.5L73,86.6L73.3,87.5L72.2,88.2L70.6,87.6L70.7,88.9L72.4,90.9L71.5,91.1L71.8,91.7L71,92.2L74.3,93.5L74.7,95.1L73.5,94.4L72.3,94.9L73.5,96L72.8,96.4L71.7,95.9L72.5,97.3L72.6,98.7L72.1,98L71.2,98.9L70.4,97.5L70,98.4L69.2,97.5L69.1,96.2L68,95.4L68.6,94.4L69.5,93.9L72,94.7L72.5,94L70.8,93.5L68.7,94L67.9,93.9L67,92.2L65.1,90.4L63.9,89.1L63.5,87.8L63.8,84.6L63.3,84.4L61.4,82.9L59.6,81.7L59.4,81.6L57.9,80.4L56,80.1L54.2,78L54.9,77.9L53.7,76.7L53.6,75.7L52.5,74.9L51.8,76.4L51.1,75.6L51,74.4L51.3,74.2L51.1,73.7L48.4,74.6L48.9,76L48.3,76.7L48.6,78.1L50.9,79.8L51.9,82.5L54.4,84.6L56.1,84.5L56.2,86L58.6,87L60.5,88L61.7,89.5L61.4,90.3L60.3,89.1L58.3,88.7L57.4,90.4L58.8,91.7L59,92.8L57.6,93.6L57.6,94.5L56.5,95.9L55.8,95.9L56.3,93.7L56.8,93.5L55.6,90.1L54,89.4L53.5,88.2L52.1,87.8L51.3,86.6L49.9,86.6L48.9,85.9L46.9,83.5L45,81.6L43.8,78.5L41.2,77.2L39.7,78.5L38.5,78.8L38.4,78.9L38.2,78.9L36.3,80.3L35.5,80.5L33.4,79.2L32.5,79.3L31.4,78.5L29.6,79.4L29.1,80.2L29.2,81.6L29.1,83L26.4,84.4L24,84.7L20.4,88.5L20.5,89.8L21.2,90.8L19,92.2L18.4,93.7L17.2,93.5L16,94.2L14.9,95.4L10,94.3L8,94.7L6.8,95.5L5.9,94.8L5.4,92.4L4.7,91.5L3.6,91.3L2.5,91.5L0.9,90.6L0,90.6L0.7,89.6L1.3,86.8L0.3,85.6L1,84L1.6,83.6L3.8,79.9L4,77.5L4.2,77.3L4.7,76.4L4.6,74.9L4.2,74.2L5.2,73.4L6.5,73.5L7.8,72.9L8.6,73.7L11.7,74.6L13.9,75.7L15.8,75.8L18.2,77L19.4,77L20.1,76.7L22.2,70.8L22.3,69.1L21.2,68.3L20.5,65.4L16.7,62.8L17.4,62.6L17,61.3L19.9,61.2L20.7,62.3L21.2,62.1L23.2,62.5L22.9,59.4L24,59.7L24,60.5L25.7,61.1L26.9,60.9L26.6,60.1L28.6,59.6L29.4,59L29.6,57.7L30.3,57.1L31.4,56.9L33,56.4L34.6,56.6L33.3,55.9L34.6,55.9L34.2,55.3L35.4,54L35.9,52.6L38.4,51.2L39.7,51.3L40.3,51.8L40.6,50.6L41.8,50.7L42.6,51.3L42.9,50.3L43.5,50.2L43,48.8L43.6,48.4L43.2,47.4L43.2,45.9L42.4,45.3L42.7,42.5L43.5,42.8L43.7,42.2L43,41.8L43.6,41.1L45,40.8L45.7,39.9L46.6,39.5L46.5,40.9L46.1,42.7L46.9,43L46.9,43.6L46.1,43.8L45.8,44.8L44.8,45.8L44.5,47.1L44.9,47.7L45.5,48.7L46.9,49.1L46.7,50.2L47.5,50.3L48.7,49.7L49.5,48.9L51.4,49.8L51.7,50.7L52.3,51L52.2,50.6L52.2,50.4L55.5,49.4L56.1,48.6L57.3,48.1L59,47.7L59.6,48.8L61.2,48.6L66.4,48.4L66.3,47L65.8,46.4L63.6,46.1L63.1,43.8L62.9,41.7L63.7,39.5L64.9,38.9L66.8,40.8L67.8,39.6L67.5,38.1L67.6,36.7L66.5,36.8L65.7,35.3L65.7,34.5L66.9,33.6L68.4,33.2L68.4,32.9L70.6,33L72.1,32.6L71.6,34.6L72,36.2L72.6,37.3L72.2,38.3L73.1,39L73,40.1L73.9,40.8L74.2,41.9L75.2,42.3L76.2,42.1L76.6,42.8L77.2,42.2L78.9,42.6L79.3,44L79.2,44.8L79.9,45.2L80.6,46.2L81.3,46.5L81.4,47.2L82.6,47.2L83.3,48.1L82.6,49L81.3,49L82.6,51.9L83.7,51L85.8,50.3L87.3,51.6L86.9,52L87.5,53.1L88.9,52.8L89.4,53.1L90,54.5L92.4,54.7L93.6,53.7L95.1,54.7L95.4,54.2L98.8,54.3L99.3,55.2L98.8,56.2L99.5,56.4L99.1,57.3L100,58L100,59.3L98.5,59.8L97.7,61L98,62.3L96.7,62.8L96.5,63.3L93.9,65L92.5,66.8L93.1,67.9L92.3,67.4L90.2,67.3L90.1,67.7L88,68.3L86.5,67.9L87.9,66.8L85.8,67.1L84.5,67.8L83.8,69.9L82.7,70.7L83.2,71.8L83.1,73.1L82.2,73.5L81.9,72.9L81.6,75ZM67.9,82.9L66.8,83.2L65.9,84.2L65.8,85.9L66.9,87L68.3,86.8L69,86.1L70.2,85.9L71,85.2L71.1,84.1L69.5,82.6ZM67.2,6L66.7,6.4L67.1,6.7L67,7.5L67.5,8.3L68.2,8.5L69.2,9.4L68.7,11.6L70.2,13.8L70.7,14.9L70.5,15.3L70.6,17L71.3,17.4L71.7,18.5L72.4,19.3L72,20.2L73.8,21.4L74.5,22.1L74.4,23.1L72.6,27.3L71.1,29.8L70.4,29.9L68.3,30.9L67.7,31.4L64.7,32.9L65,32.3L64.4,31.8L63.9,32.4L64,31.4L62.3,30.9L62.1,29.9L62.2,28.1L61.6,27L61.2,25.3L61.8,24L61.6,23.6L62.6,23.1L62.7,22.2L63.5,21.4L64.5,19.4L64.7,18.6L65.6,18.3L65.3,16.5L63.8,15.8L62.6,16.2L61.7,16L61.6,16.7L60.9,17.3L61,18L60.6,19.1L61.2,20L60.4,21.8L58.7,23L57.8,24L57.7,24.8L57,25L57.2,25.6L56.6,26.1L56.2,28.2L56.4,31.1L57.4,31.4L58.7,32.7L59,33.6L58,34.7L58.2,35.5L56,37.1L55.8,39.3L55.8,41.5L55.1,43.9L53,44.2L52.2,45L52.2,46.3L50.1,46.2L50.2,45.1L49.5,43.7L50.1,42.8L49.4,42L48.4,39.6L47.8,37.4L47.8,35.7L48.1,35.9L47.3,35.4L46.9,34.2L46.3,35.9L45.6,35.8L43.7,37.7L42,38.4L40.7,37.9L39.6,36.7L39.6,35.3L40,35.2L40.7,33.9L39.3,34.8L39,34.6L39.4,33.4L40.7,33L40.1,32.9L41.4,31.5L40.8,31.6L39.1,33.3L39.6,30.8L39.5,29.4L40.8,29.4L42.3,29.6L41.8,29.2L39.9,29.3L39.6,27.5L40.1,26.3L41.7,25.3L43.6,25.5L44.1,25L42.4,25L42.8,24.3L44.3,24.1L44.9,23.5L44.7,22.9L45.3,22.6L46.4,22.7L46.7,23.4L47.7,23.3L47.7,22.8L48.6,22.3L48.5,21.6L48,22.4L46.7,23L46.3,22.2L47.6,20.5L48.9,19.7L48.8,19L49.7,18.5L49.9,17.2L50.5,15.9L50.9,15.5L51,14.3L52,13L53.5,12.6L52.4,12.5L52.9,11.7L53.5,12L53.3,11.2L52.7,11.4L53,10.6L54,9.8L54.3,10.8L54.4,9.4L54.7,8.7L55.4,8.2L55.7,7.3L56.1,7.1L56.2,6.2L56.6,6.3L57.1,5.4L57.6,5.3L57.6,6.3L57.9,4.9L59.7,4.4L59.1,3.8L60.3,3.3L61,4.3L61,3.6L61.8,2.1L62,1.2L63,1.5L62.7,2.4L62.7,3.7L63.6,1.2L63.9,1.4L64,2.6L64.6,1.3L64.5,0.5L65.3,0.7L65.6,2.6L65.7,1.3L66,0.9L68.2,2.1L67.4,2.8L66.2,2.9L67.1,3.2L67.3,3.7L68.5,3.4L68.7,4.1L68,4L67.9,4.7L67.4,5.1ZM55.4,95.1L54.4,97.3L54.9,98.5L54.4,99.5L53,99.2L48.3,96.2L49,95.2L51.2,95.8ZM42.4,87.3L42.7,88.3L42.2,91.7L41.9,92.2L40.9,91.9L40.5,92.8L39.5,91.9L39.9,90.1L39.4,87L40.1,87.3L41.6,86.2ZM18.9,8.3L19.8,8.3L19.2,8.8L19.5,9.3L19.1,9.8L20.1,11.1L19.5,12.3L17.9,13.3L17,13.6L15.6,13.5L14.7,13.9L13.2,13.6L12.6,14L11.8,13.9L10.3,12.6L9.7,11L8.1,10.4L10,9.6L9.7,8.2L8.3,7L9.7,7.4L10.7,7.9L10.4,7.1L11.4,6.9L10.5,6L9.3,5.8L8.9,5.2L9.6,4.8L10.4,5.3L10.5,4.3L11,4.2L11,4.9L11.7,5L11.5,4L12.3,4.2L12.7,5.8L11.8,7.1L11.8,7.8L12.8,7L13,7.4L13.7,6.3L14.1,7.4L14.8,6.8L15.5,6.9L15.7,8.1L16,7.1L16.5,8L17.2,7.6L17.9,8L18.2,7.3L18.8,7.4Z"/></svg>Europe</span>
+        <span class="pfp" style="--tilt:-1.5deg;"><svg viewBox="-2 -2 104 104" aria-hidden="true"><path d="M29.2,31.5L29,30.8L29.2,30.6L29.3,29.5L28.3,29.6L28.8,29.1L28.5,27.4L28.1,27.1L28.3,26.3L27.8,25L27.7,23.5L27.5,25L26.9,24.6L26.9,23.9L26.4,23.3L26.8,24.5L26.3,24.6L25.7,23.8L25.5,22.8L24.7,21.7L25.2,21.1L24.5,21.3L22.8,19.8L21.9,19.5L21.2,18.1L20.7,17.7L20.9,17.1L19.4,16.8L19.5,17.3L19.1,17.8L18.5,17.8L18.3,17.4L17.9,17.8L17,17.6L16.5,17.9L15.9,17.6L16.6,17.3L16.3,16.8L17.2,16.2L17.4,15.8L18.3,15.8L18.8,16.1L18.8,15.6L18.4,15.3L17.5,15.4L14.2,16.6L14.5,17.4L13.3,17.9L12.7,17.7L11.1,17.9L10.7,18.3L8.9,18.2L8.8,18.5L5.8,17.9L5.1,17.9L4.6,17.4L5.6,17.1L6.6,17.3L7,17.6L7.5,17.4L9,17.3L10.4,17.1L11.3,16L12,15.6L11.2,15.5L10.9,14.8L10.5,15.4L10.3,14.4L10,13.9L9,13.9L9.2,12.8L9.6,12.5L9.9,11.4L9.5,11.7L8.5,11.2L8.5,10.2L8.3,9.6L9,9.5L9.4,10.4L9.7,10.3L8.8,9.2L9.1,9.2L8.9,8.6L8.9,7.9L9.6,7.6L11.7,7.1L11.9,7.7L13,7.6L13.5,8.1L14.1,7.9L14.4,6.8L14.7,7L14.8,6.5L13.4,6.4L13.1,5.7L12.3,5.3L11.8,4.6L11.9,3.6L12.4,3.8L11.9,3.1L11.7,2.5L12.5,2.8L13.8,2.9L14.9,3.5L14.4,3.8L14.5,4.1L15.5,4.9L15.9,4.3L16.4,5.1L16.8,5L16.1,4.5L16,4.2L16.4,4L15.7,3.3L15.4,2.8L15.6,2.2L15.3,1.2L14.9,0.3L15.1,0.4L15.6,0L16.6,0.8L17.6,0.8L18,0.5L18.8,0.4L19.4,0.7L20.7,0.7L21.4,1.2L22.6,1.2L23.3,2.6L23.9,2.8L24.4,3.3L24.2,3.4L24.7,4.1L25.8,4.6L26.5,5.4L27.5,6.1L27.8,6.4L29,6.9L29.7,7.9L30,8L31,8.7L31.4,9.4L32.1,10.1L32.7,10.3L33,9.8L34.2,10L33.9,10.3L34.6,10.3L36.5,10L37,10.3L36,10.5L35.4,10.4L34.2,10.9L34.6,11.1L34.7,10.8L35.4,10.6L35.9,10.7L37.2,10.6L37.3,10.8L38.3,10.4L38.2,9.9L38.6,10.5L38.7,11.2L39.4,11.9L39.6,11.3L40.2,11.1L40.3,11.7L40,12L40.5,12.2L41,11.7L42.2,12.2L42.6,12.6L43.5,13L43.9,13.4L45.2,13.9L45.5,13.8L46.1,14.2L46.4,14.7L45.9,14.8L45.4,15.3L46.5,15.7L48.3,15.8L48.9,15.6L49.2,16L49.9,16.3L50.3,16.9L49.9,17L50.4,17.5L50.8,17.3L50.3,16.1L50.5,15.7L51.4,15.6L51.9,15.1L50.6,15.3L50.2,15.5L49.9,15.3L50.2,14.9L51.7,14.6L52.1,15.2L52.9,15.9L53.4,15.8L53.9,16.2L54.7,16.4L55.4,16.2L56.4,16.4L56.8,16.2L57.4,16.5L57.6,16.1L57,16.1L56.6,15.5L57.5,15.3L57.9,15.9L58.4,15.6L58.2,16.6L58.9,16.9L58.6,16.3L58.8,15.9L59.2,15.8L59.9,15L59.3,14.6L59.6,14.3L59.4,13.9L58.3,13.5L57.9,12.8L58.3,12.5L57.9,12.2L58,11.6L58.6,11.3L58.3,11.2L59.1,10.7L60.1,11.5L60.1,12L60.5,12.3L60.9,13L60.3,13.6L61,13.7L61.8,13.6L61.4,14L62,14.5L62,15L62.2,15.3L62.5,14.2L62.8,13.8L63.6,14.4L63.8,15.1L63.5,15.1L63.7,15.8L64.4,16.5L64.8,16L65.1,15.2L65.2,14.2L65.6,13.7L65.2,13.6L65.1,12.8L65.8,12.7L67.1,12.7L66.9,12.9L67.9,13.2L67.5,13.6L68,13.8L67.2,14.3L67.8,15L68.3,15.4L68.3,16L67.7,16.8L67.1,17.2L66.3,16.5L66.9,17.4L66.5,17.6L65.6,17.2L64.9,17.3L65.5,18L64.7,19.1L64.2,19.1L62.9,18.5L62,18.5L62.9,18.7L63.5,19.2L64.9,19.3L64.4,20.8L63.9,21.2L62.9,21.3L62.9,21.8L61.7,21.8L62.6,22.3L62.5,22.9L61.4,23.2L61.8,23.4L61.2,23.8L61.4,24.1L60.6,24.5L60.8,24.8L60.3,25.5L59.9,27.6L60,29.2L60.4,29.5L61.2,29.4L62.1,31.7L61.9,32.2L63.2,31.6L63.6,31.6L65.1,32L65.9,32.5L66.4,33.1L68,33.5L68.7,34L69.7,33.8L70.9,33.9L71.3,34.3L71.3,35.1L71.7,35.9L71.8,37.3L72.7,38.3L73.7,38.9L74,39.6L74.8,39.7L74.9,38.8L75.5,39.4L75.2,38.6L75.5,37.7L74.1,34.9L73.6,34.1L74.9,32.9L75.6,31.3L75.4,30L75.1,29.3L74.5,28.4L73.1,27.7L73.5,26.5L73.6,25.4L72.6,24.4L72.9,23.2L72.5,23L72.2,22.2L72.6,21.7L74.8,21.7L75.3,21.2L76.3,21.5L77.6,22.5L79.1,22.3L79.4,23.9L80,24.7L80.1,25.4L81,25.2L81.3,25.8L82,25.9L82.5,25.1L83,24L82.7,22.9L83,22L85.6,24L85.6,24.7L85.9,24.4L86.5,24.6L86.3,25.4L87.5,25.7L87.7,26.2L87.1,26.4L87.8,26.6L88,27.2L89.1,27.1L89.4,27.5L89.3,28.3L89.8,27.6L90.5,27.5L90.9,27.9L91.6,27.5L92.2,27.8L91.6,29L90.8,29.8L90.7,30.8L91.8,28.6L92.5,28.4L93,28.8L94,28.7L94.5,29.1L95.4,30.6L94.8,32.1L93.6,32.9L93,35.1L91.9,35.7L90.6,36.1L87.3,37.5L87,38L87,39.2L86.4,39.5L85.8,40.5L85.4,42.3L84.6,44.4L84.1,44.7L83.2,45.8L82.6,47.5L82,48.2L83,47.2L83.1,46.2L84.1,44.8L85.2,43.8L86,41.3L87.1,40L88.1,39L89.4,38.5L90.1,38.7L90.3,39.5L89.7,40.5L89,40.4L88.6,40.8L89.7,41L90.4,40.7L90.2,41.9L90.7,42.1L91.4,42.9L92.9,43.2L93.8,43L94.1,42.4L95.4,42.9L93.3,45.3L92.9,45.1L92.5,46.7L91.9,47.5L91.3,47.2L91,46.4L91.2,45.6L92.2,44.2L92.3,44.5L93.1,43.8L91.6,44.4L91.9,43.4L90.7,45L89.5,45.5L89.8,46.3L88.6,47.4L88.1,47.3L88.2,47.9L87.4,48.5L87,50.4L87.1,51.3L87.9,51.9L88.6,51.9L87,52.9L85.6,53.6L84.5,55L84.9,55.4L84.9,56.4L84.6,57.7L83.5,57.2L84.5,58.6L83.9,60.9L84,59.7L82.9,57.9L82.7,57.9L83,59.6L83.4,59.9L83.6,61.6L84.1,61.4L84.5,62.6L83.6,63.2L84.8,63L84.5,63.9L83.1,66.1L83,66.7L82,67.3L81.7,68.3L80.4,69.8L79.8,70.9L79.6,72.5L80.3,74.2L82.9,78.9L82.9,80.9L81.9,81.4L81.4,80.4L80.9,80.3L80.1,79L79.8,79.1L78.8,77.7L78.7,76L77.1,74.6L76.6,74.4L75,75.3L74.3,74.6L73.4,74.4L71.7,74.8L70.2,74.8L69.3,75.3L68.5,75L68.6,75.6L69.2,75.3L69.7,75.8L69.3,76.2L70.3,76.8L69.8,77L69.1,76.5L68.7,77.1L68,77.1L66.4,76.1L65.9,76.6L63.7,76.4L62.6,76.9L62,77.8L61.3,78.4L60.2,78.3L60.5,78.7L59.7,79.3L59.1,80.6L59.2,81.9L59.7,82.7L59,85.2L58.8,88L59.1,89.6L60,91.1L61,92.3L62,93.9L63,94L64,94.7L67.8,93.6L68.8,93.7L68.6,93.3L69.5,92.5L69.8,91.6L69.8,89.9L70.6,89.4L73,88.6L74.9,88.6L75,89.4L74,91.5L74.4,91.6L74,93.6L73.7,92.8L73.3,93.4L72.2,94.6L69.4,94.9L69.5,95.7L68.8,95.8L70.5,97L70.5,97.4L68.5,97.6L67.9,98.8L67.9,100L65.1,97.9L63.6,97.5L62.7,98.2L61.1,98.7L59.2,98.3L57.6,97.5L56.2,97.2L54.4,96.5L52.9,95.3L50.5,94.7L49.8,93.9L48.3,93L47.3,91.3L48.1,89.6L47.5,88.8L47.4,87.8L45.7,85.5L44.5,84.5L44.5,83.8L42.9,82.8L42.7,82L43,81.6L42.2,80.3L41.5,79.8L41.5,79L40.7,78.7L39.6,76.9L38.7,73.9L38.9,73.2L37.5,72.5L36.6,71.7L36.5,72.9L36.6,74.8L37.5,75.9L38.5,77.7L38.5,78.7L39.9,80.6L40.1,82.1L40.7,83.8L40.7,84.5L41.2,84.6L42.3,86L41.5,86.9L41,85.7L38.8,83.5L39,82.5L38.7,81.3L37.9,80.6L37.8,80L37.1,80.2L36.1,79.3L35.5,78.2L36.6,78.1L36.8,77.1L35.9,75.7L35.1,75L34.9,73.2L34.4,71.9L34,70.2L33.9,68.9L32.8,67.5L31.6,66.6L30.6,66.3L30.6,65.3L29.6,63L29.8,62L29.3,61.4L29.4,60.4L28.5,58.3L28.7,56.8L28.4,55.6L29.1,54.3L29.2,51.9L30,50.6L31.3,46.7L31.4,45.3L31.3,43.8L31.4,43L32,43.5L33.2,43.9L33,45.3L33.7,44.2L33.4,43.4L33.5,42.5L33.2,41.7L32.7,41.5L32,40.4L32,39.6L30.7,39.2L30.9,38.3L30.3,38.5L29.9,37.9L30.3,36.1L29.8,36.8L29.8,36.1L30.3,35L30.1,35.1L29.8,33.6L30.2,34.1L30.3,33.3L29.2,34.1L28.8,33.2L29.3,32.6L29.1,32.1L30.4,30.7L29.9,30.8L30.2,30L29.6,31.2Z"/></svg>North America</span>
       </div>
     </div>
 
@@ -530,39 +727,39 @@
 
       <!-- watermark glyphs behind step 01 -->
       <div class="wm-01" style="position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .8s ease;">
-        <i data-lucide="contact-2" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#111;opacity:0.017;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
-        <i data-lucide="file-text" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#111;opacity:0.015;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
-        <i data-lucide="file-text" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#111;opacity:0.013;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
-        <i data-lucide="contact-2" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#111;opacity:0.014;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
-        <i data-lucide="contact-2" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#111;opacity:0.014;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
-        <i data-lucide="file-text" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#111;opacity:0.013;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        <i data-lucide="contact-2" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
+        <i data-lucide="file-text" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
+        <i data-lucide="file-text" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
+        <i data-lucide="contact-2" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
+        <i data-lucide="contact-2" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
+        <i data-lucide="file-text" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
       </div>
 
       <div class="wm-02" style="position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .8s ease;">
-        <i data-lucide="puzzle" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#111;opacity:0.017;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
-        <i data-lucide="zap" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#111;opacity:0.015;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
-        <i data-lucide="zap" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#111;opacity:0.013;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
-        <i data-lucide="puzzle" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#111;opacity:0.014;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
-        <i data-lucide="puzzle" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#111;opacity:0.014;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
-        <i data-lucide="zap" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#111;opacity:0.013;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        <i data-lucide="puzzle" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
+        <i data-lucide="zap" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
+        <i data-lucide="zap" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
+        <i data-lucide="puzzle" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
+        <i data-lucide="puzzle" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
+        <i data-lucide="zap" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
       </div>
 
       <div class="wm-03" style="position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .8s ease;">
-        <i data-lucide="file-audio" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#111;opacity:0.017;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
-        <i data-lucide="mic" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#111;opacity:0.015;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
-        <i data-lucide="mic" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#111;opacity:0.013;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
-        <i data-lucide="file-audio" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#111;opacity:0.014;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
-        <i data-lucide="file-audio" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#111;opacity:0.014;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
-        <i data-lucide="mic" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#111;opacity:0.013;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        <i data-lucide="file-audio" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
+        <i data-lucide="mic" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
+        <i data-lucide="mic" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
+        <i data-lucide="file-audio" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
+        <i data-lucide="file-audio" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
+        <i data-lucide="mic" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
       </div>
 
       <div class="wm-04" style="position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .8s ease;">
-        <i data-lucide="message-square" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#111;opacity:0.017;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
-        <i data-lucide="trending-up" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#111;opacity:0.015;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
-        <i data-lucide="trending-up" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#111;opacity:0.013;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
-        <i data-lucide="message-square" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#111;opacity:0.014;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
-        <i data-lucide="message-square" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#111;opacity:0.014;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
-        <i data-lucide="trending-up" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#111;opacity:0.013;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        <i data-lucide="message-square" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
+        <i data-lucide="trending-up" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
+        <i data-lucide="trending-up" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
+        <i data-lucide="message-square" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
+        <i data-lucide="message-square" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
+        <i data-lucide="trending-up" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
       </div>
 
       <!-- centerpiece: rings + orbit + phone -->
@@ -741,12 +938,12 @@
         <div class="copy" data-copy="0" style="position:absolute;top:50%;left:0;width:100%;transform:translateY(-50%);opacity:1;">
           <div class="dfin" data-di="0" style="opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(42px,6.2vw,56px);color:#E62B15;line-height:0.86;margin-bottom:6px;letter-spacing:-0.02em;">01</div>
           <div class="dfin" data-di="0" style="opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);font-weight:700;font-size:clamp(25px,3.8vw,32px);letter-spacing:-0.03em;line-height:1.06;margin-bottom:12px;">build your passport</div>
-          <div class="dfin" data-di="0" style="opacity: 0; transform: translateY(16px); transition: opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1); font-size: clamp(16px,2.15vw,17.5px); color: #2c2c30; line-height: 1.4; max-width: 20ch; text-wrap: pretty; font-weight: 500">video pitch. the best thing you've made. once, on the platform.</div>
+          <div class="dfin" data-di="0" style="opacity: 0; transform: translateY(16px); transition: opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1); font-size: clamp(16px,2.15vw,17.5px); color: #2c2c30; line-height: 1.4; max-width: 20ch; text-wrap: pretty; font-weight: 500">a video pitch and the best thing you've made or done. once, on the platform.</div>
         </div>
         <div class="copy" data-copy="1" style="position:absolute;top:50%;left:0;width:100%;transform:translateY(-50%);opacity:0;">
           <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(42px,6.2vw,56px);color:#E62B15;line-height:0.86;margin-bottom:6px;letter-spacing:-0.02em;">02</div>
           <div style="font-weight:700;font-size:clamp(25px,3.8vw,32px);letter-spacing:-0.03em;line-height:1.06;margin-bottom:12px;">get matched</div>
-          <div style="font-size:clamp(16px,2.15vw,17.5px);color:#2c2c30;line-height:1.4;max-width:20ch;text-wrap:pretty;font-weight:500;">roles come to you. we ping your phone when one fits.</div>
+          <div style="font-size:clamp(16px,2.15vw,17.5px);color:#2c2c30;line-height:1.4;max-width:20ch;text-wrap:pretty;font-weight:500;">meet the bar and roles come to you. we ping your phone when one fits.</div>
         </div>
         <div class="copy" data-copy="2" style="position:absolute;top:50%;left:0;width:100%;transform:translateY(-50%);opacity:0;">
           <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(42px,6.2vw,56px);color:#E62B15;line-height:0.86;margin-bottom:6px;letter-spacing:-0.02em;">03</div>
@@ -755,8 +952,8 @@
         </div>
         <div class="copy" data-copy="3" style="position:absolute;top:50%;left:0;width:100%;transform:translateY(-50%);opacity:0;">
           <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(42px,6.2vw,56px);color:#E62B15;line-height:0.86;margin-bottom:6px;letter-spacing:-0.02em;">04</div>
-          <div style="font-weight:700;font-size:clamp(25px,3.8vw,32px);letter-spacing:-0.03em;line-height:1.06;margin-bottom:12px;">hear back</div>
-          <div style="font-size:clamp(16px,2.15vw,17.5px);color:#2c2c30;line-height:1.4;max-width:20ch;text-wrap:pretty;font-weight:500;">an answer, either way. every time. no ghosting.</div>
+          <div style="font-weight:700;font-size:clamp(25px,3.8vw,32px);letter-spacing:-0.03em;line-height:1.06;margin-bottom:12px;">hear back. always.</div>
+          <div style="font-size:clamp(16px,2.15vw,17.5px);color:#2c2c30;line-height:1.4;max-width:20ch;text-wrap:pretty;font-weight:500;">from an actual human at the startup. not a bot. not an AI recruiter. it's the rule.</div>
         </div>
       </div>
 
@@ -773,7 +970,9 @@
   </div><!-- /how it works -->
 
   <!-- ===================== PASSPORT ===================== -->
-  <section data-screen-label="Passport" style="position:relative;padding:clamp(60px,19vh,240px) 24px clamp(24px,3vh,40px);">
+  <section data-screen-label="Passport" style="isolation:isolate;position:relative;padding:clamp(60px,19vh,240px) 24px clamp(24px,3vh,40px);">
+    <div class="sec-grid" aria-hidden="true"></div>
+
 
     <h2 data-reveal="" class="dfin" data-di="0" style="opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0 0 clamp(48px,6vh,80px);text-align:center;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(34px,4.2vw,50px);letter-spacing:-0.03em;line-height:1;color:#111;text-wrap:balance;">verify once. apply anywhere.</h2>
 
@@ -783,7 +982,8 @@
       <div class="dfin passport-text" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:9px;">
         <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(26px,3vw,37px);line-height:.9;letter-spacing:-0.02em;color:#E62B15;">01</div>
         <div style="font-weight:700;font-synthesis:none;font-size:clamp(18px,1.85vw,23px);letter-spacing:-0.03em;line-height:1.12;color:#111;">pick your track</div>
-        <p style="margin:0;font-weight:500;font-size:clamp(13px,1.05vw,14.5px);line-height:1.5;color:#5f5f66;max-width:38ch;text-wrap:pretty;">pick the track you're going for. software, marketing, design, hardware. the work you actually want to do. a 60 second video pitch. a 3 minute walkthrough of the best thing you've made, with the real files behind it. set aside 2 hours and do it properly. that's it. you're verified.</p>
+        <p style="margin:0;font-weight:500;font-size:clamp(13px,1.05vw,14.5px);line-height:1.5;color:#5f5f66;max-width:38ch;text-wrap:pretty;">pick the track you're going for. software, marketing, design, hardware, ops. the work you actually want to do. a 60 second video pitch. a 3 minute walkthrough of the best thing you've made or done, with the real files behind it. a product you built, a campaign you ran, a process you fixed. 2 hours, once. that's it.
+        </p>
       </div>
         <div class="passport-dot" style="position:relative;height:100%;display:flex;align-items:center;justify-content:center;">
         <span class="pdot" style="position:absolute;left:50%;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;background:#d0d0d6;transition:background .35s ease;"></span>
@@ -915,14 +1115,14 @@
       <div class="dfin passport-text" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:9px;">
         <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(26px,3vw,37px);line-height:.9;letter-spacing:-0.02em;color:#E62B15;">02</div>
         <div style="font-weight:700;font-synthesis:none;font-size:clamp(18px,1.85vw,23px);letter-spacing:-0.03em;line-height:1.12;color:#111;">it gets checked, for real</div>
-        <p style="margin:0;font-weight:500;font-size:clamp(13px,1.05vw,14.5px);line-height:1.5;color:#5f5f66;max-width:38ch;text-wrap:pretty;">we verify your work matches your claims. a human reviews it properly, checks the details, and makes sure it backs up what you’ve said. nothing gets auto rejected by a bot.</p>
+        <p style="margin:0;font-weight:500;font-size:clamp(13px,1.05vw,14.5px);line-height:1.5;color:#5f5f66;max-width:38ch;text-wrap:pretty;">we check your work against your claims. a human reviews it, and scores you on 5 things a CV can't show: communication, initiative, problem solving, strategic thinking, persistence. then everyone takes the same short platform test, so you're judged on what you can do, not where you studied. meet the bar and you're in the pool founders hire from. nothing gets auto rejected by a bot.<br><br>can't show your work publicly? redact it, or share it with access you control.</p>
       </div>
       </div>
-      <div data-reveal="" class="passport-row" style="display:grid;grid-template-columns:1fr 1px 1fr;column-gap:clamp(34px,4.4vw,68px);align-items:center;">
+      <div data-reveal="" class="passport-row passport-row-3" style="display:grid;grid-template-columns:1fr 1px 1fr;column-gap:clamp(34px,4.4vw,68px);align-items:center;">
       <div class="dfin passport-text" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:9px;">
         <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(26px,3vw,37px);line-height:.9;letter-spacing:-0.02em;color:#E62B15;">03</div>
-        <div style="font-weight:700;font-synthesis:none;font-size:clamp(18px,1.85vw,23px);letter-spacing:-0.03em;line-height:1.12;color:#111;">more stamps, more matches</div>
-        <p style="margin:0;font-weight:500;font-size:clamp(13px,1.05vw,14.5px);line-height:1.5;color:#5f5f66;max-width:38ch;text-wrap:pretty;">apply to any role on the platform. want stronger matches on another track? earn its stamp. every stamp sharpens your matches. none of them gate you.</p>
+        <div style="font-weight:700;font-synthesis:none;font-size:clamp(18px,1.85vw,23px);letter-spacing:-0.03em;line-height:1.12;color:#111;">one stamp gets you into the pool.</div>
+        <p style="margin:0;font-weight:500;font-size:clamp(13px,1.05vw,14.5px);line-height:1.5;color:#5f5f66;max-width:38ch;text-wrap:pretty;">want stronger matches on another track? earn its stamp. every extra stamp sharpens your matches.</p>
       </div>
         <div class="passport-dot" style="position:relative;height:100%;display:flex;align-items:center;justify-content:center;">
         <span class="pdot" style="position:absolute;left:50%;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;background:#d0d0d6;transition:background .35s ease;"></span>
@@ -976,15 +1176,25 @@
       <div class="dfin passport-text" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:9px;">
         <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(26px,3vw,37px);line-height:.9;letter-spacing:-0.02em;color:#E62B15;">04</div>
         <div style="font-weight:700;font-synthesis:none;font-size:clamp(18px,1.85vw,23px);letter-spacing:-0.03em;line-height:1.12;color:#111;">the tracker is open to all</div>
-        <p style="margin:0;font-weight:500;font-size:clamp(13px,1.05vw,14.5px);line-height:1.5;color:#5f5f66;max-width:38ch;text-wrap:pretty;">the tracker's 6,000+ external jobs? open to everyone, stamp or not, live today. you apply to those direct, so the 7 day answer covers platform roles.</p>
+        <p style="margin:0;font-weight:500;font-size:clamp(13px,1.05vw,14.5px);line-height:1.5;color:#5f5f66;max-width:38ch;text-wrap:pretty;">and the tracker's 6,000+ external jobs? open to everyone, stamp or not, live today. you apply to those direct, so the 7 day answer covers every role through us.</p>
       </div>
       </div>
+    </div>
+
+    <!-- closes the section on the same ask as the hero. it sits outside the rows
+         wrapper so it stays clear of the grid and of the spine, which is measured
+         dot-01-to-dot-04 against that wrapper. carries its own data-reveal so it
+         fades in on approach rather than with the whole section. -->
+    <div data-reveal="" class="dfin" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);display:flex;justify-content:center;margin-top:clamp(46px,6vh,80px);">
+      <a href="https://tally.so/r/7RRlp9" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;background:#E62B15;color:#fff;font-weight:700;font-size:15px;padding:13px 30px;border-radius:100px;transition:background .2s,transform .2s;box-shadow:0 10px 24px -8px rgba(230,43,21,.5);" style-hover="background:#c31f0c;transform:translateY(-2px);color:#fff;">get seen</a>
     </div>
 
   </section>
 
   <!-- ===================== DIFFERENCE ===================== -->
-  <section data-screen-label="Difference" style="position:relative;padding:clamp(60px,19vh,240px) 0 clamp(48px,15vh,190px);overflow:hidden;">
+  <section data-screen-label="Difference" style="isolation:isolate;position:relative;padding:clamp(50px,15vh,190px) 0 clamp(48px,15vh,190px);overflow:hidden;">
+    <div class="sec-grid" aria-hidden="true"></div>
+
 
     <h2 class="dfin" data-di="0" style="opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0 0 clamp(4px,0.8vh,20px);text-align:center;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(34px,4.2vw,50px);letter-spacing:-0.03em;line-height:1;color:#111;text-wrap:balance;">what makes uncooked different.</h2>
 
@@ -1005,7 +1215,7 @@
         <div class="dgc" style="position:absolute;top:calc(100% + 32px);left:50%;transform:translateX(-50%);width:max(100%,280px);max-width:320px;z-index:6;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:20px 26px;text-align:center;box-shadow:0 10px 26px -14px rgba(20,20,30,.22),0 2px 6px -1px rgba(20,20,30,.07);">
             <div style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:500;font-size:clamp(18px,2.2vw,23px);line-height:1;letter-spacing:-0.01em;color:#E62B15;margin-bottom:6px;">01</div>
             <div style="font-family:'Satoshi',system-ui,sans-serif;font-weight:700;font-synthesis:none;font-size:clamp(15px,1.7vw,18px);line-height:1.2;letter-spacing:-0.02em;color:#111;">you never repeat the work.</div>
-            <div class="dgb"><p style="margin:0;font-family:'Satoshi',system-ui,sans-serif;font-weight:500;font-size:clamp(13px,1.4vw,15px);line-height:1.5;color:#5f5f66;text-wrap:pretty;">2 honest hours. your proof travels with every application after that. no fresh brief for every company. no rewriting your story 140 times.</p></div>          </div>
+            <div class="dgb"><p style="margin:0;font-family:'Satoshi',system-ui,sans-serif;font-weight:500;font-size:clamp(13px,1.4vw,15px);line-height:1.5;color:#5f5f66;text-wrap:pretty;">2 honest hours, once. your proof travels with every application after that. no fresh brief for every company. no rewriting your story 140 times.</p></div>          </div>
         </div>
       </div>
 
@@ -1042,7 +1252,7 @@
         <div class="dgc" style="position:absolute;top:calc(100% + 32px);left:50%;transform:translateX(-50%);width:max(100%,280px);max-width:320px;z-index:6;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:20px 26px;text-align:center;box-shadow:0 10px 26px -14px rgba(20,20,30,.22),0 2px 6px -1px rgba(20,20,30,.07);">
             <div style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:500;font-size:clamp(18px,2.2vw,23px);line-height:1;letter-spacing:-0.01em;color:#E62B15;margin-bottom:6px;">03</div>
             <div style="font-family:'Satoshi',system-ui,sans-serif;font-weight:700;font-synthesis:none;font-size:clamp(15px,1.7vw,18px);line-height:1.2;letter-spacing:-0.02em;color:#111;">a response is the rule.</div>
-            <div class="dgb"><p style="margin-bottom:1vh;font-family:'Satoshi',system-ui,sans-serif;font-weight:500;font-size:clamp(13px,1.4vw,15px);line-height:1.5;color:#5f5f66;text-wrap:pretty;">every application on the platform gets an answer within 7 days. from an actual human at the startup. not a bot. not an AI recruiter.</p></div>          </div>
+            <div class="dgb"><p style="margin-bottom:1vh;font-family:'Satoshi',system-ui,sans-serif;font-weight:500;font-size:clamp(13px,1.4vw,15px);line-height:1.5;color:#5f5f66;text-wrap:pretty;">every application through us gets an answer within 7 days. from an actual human at the startup. not a bot. not an AI recruiter.</p></div>          </div>
         </div>
       </div>
 
@@ -1075,14 +1285,14 @@
 
           <div class="belief-body-col belief-body-dark" style="flex:1;min-width:0;padding-left:clamp(24px,4vw,52px);display:flex;flex-direction:column;gap:clamp(18px,1.5vw,24px);column-gap:clamp(24px,3vw,40px);">
             <div class="belief-dark-group" style="display:flex;flex-direction:column;gap:clamp(18px,1.5vw,24px);">
-            <p class="dfin" data-di="3" style="opacity:0;transform:translateY(14px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-weight:500;font-size:clamp(15px,1vw,16px);line-height:1.6;color:rgba(255,255,255,0.72);">here's what actually happens when you apply. software ranks you by keywords before any person looks. a recruiter gets about 7 seconds with your CV, if they see it at all.</p>
-            <p class="dfin" data-di="3" style="opacity:0;transform:translateY(14px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-weight:500;font-size:clamp(15px,1vw,16px);line-height:1.6;color:rgba(255,255,255,0.72);">qualified people get filtered out for not matching the wording exactly. most ghosting happens right after you hit submit.</p>
-            </div>
-            <div class="belief-dark-group" style="display:flex;flex-direction:column;gap:clamp(18px,1.5vw,24px);">
+            <p class="dfin" data-di="3" style="opacity:0;transform:translateY(14px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-weight:500;font-size:clamp(15px,1vw,16px);line-height:1.6;color:rgba(255,255,255,0.72);">software ranks you by keywords before any person looks. a recruiter gets about 7 seconds with your CV, if they see it at all. qualified people get filtered out for not matching the wording exactly. most ghosting happens right after you hit submit.</p>
             <div class="dfin belief-quote" data-di="4" style="opacity:0;transform:translateY(14px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);padding-left:14px;border-left:3px solid #E62B15;">
               <p style="margin:0;font-weight:700;font-synthesis:none;font-size:clamp(18px,2vw,21px);line-height:1.3;letter-spacing:-0.02em;color:#fcfcfc;">rejection emails go out at 1:30 in the morning. nobody was awake. nobody read it.</p>
             </div>
-            <p class="dfin" data-di="4" style="opacity:0;transform:translateY(14px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-weight:500;font-size:clamp(15px,1vw,16px);line-height:1.6;color:rgba(255,255,255,0.72);">nobody is judging what you can do. a machine is skimming what you wrote about it.</p>
+            </div>
+            <div class="belief-dark-group" style="display:flex;flex-direction:column;gap:clamp(18px,1.5vw,24px);">
+            <p class="dfin" data-di="4" style="opacity:0;transform:translateY(14px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-weight:500;font-size:clamp(15px,1vw,16px);line-height:1.6;color:rgba(255,255,255,0.72);">nobody is judging what you can do. a machine is skimming what you wrote about it.<br><br>we've mentored over 100 people into roles. we've watched strong people send 200 applications into silence.
+            </p>
             </div>
           </div>
         </div>
@@ -1092,13 +1302,13 @@
       <div style="position:relative;background:#fcfcfc;padding:clamp(28px,3vw,44px) clamp(24px,5vw,52px) clamp(28px,3vw,46px);">
         <div class="belief-row" style="display:flex;align-items:stretch;">
           <div class="belief-head-col" style="flex:1;min-width:0;padding-right:clamp(24px,4vw,52px);display:flex;align-items:flex-start;">
-            <h3 class="dfin belief-h3" data-di="5" style="opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(32px,6vw,52px);line-height:1;letter-spacing:-0.022em;color:#232528;">we built the <span style="font-style:italic;">opposite.</span></h3>
+            <h3 class="dfin belief-h3" data-di="5" style="opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(32px,6vw,52px);line-height:1;letter-spacing:-0.022em;color:#232528;">so we built the <span style="font-style:italic;">opposite.</span></h3>
           </div>
 
           <div class="belief-vdiv" style="flex:none;width:1px;background:rgba(0,0,0,0.12);"></div>
 
           <div class="belief-body-col" style="flex:1;min-width:0;padding-left:clamp(24px,4vw,52px);display:flex;flex-direction:column;gap:clamp(18px,1.2vw,22px);align-items:center;text-align:center;">
-            <p class="dfin" data-di="6" style="opacity:0;transform:translateY(14px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-weight:500;font-size:clamp(15px,1vw,16px);line-height:1.6;color:#5f5f66;max-width:56ch;text-align:justify;text-align-last:center;">startups see your actual work, verified, before the first call. a human reviews every application. and every single one gets an answer. it's the rule.</p>
+            <p class="dfin" data-di="6" style="opacity:0;transform:translateY(14px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-weight:500;font-size:clamp(15px,1vw,16px);line-height:1.6;color:#5f5f66;max-width:56ch;text-align-last:center;">startups see your actual work, verified, before the first call. a human reviews every application. and every single one gets an answer.</p>
             <div style="display:flex;flex-direction:column;gap:10px;align-items:center;">
               <a href="https://tally.so/r/7RRlp9" target="_blank" rel="noopener" class="dfin" data-di="6" style="opacity:0;transform:translateY(14px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);display:inline-flex;align-items:center;justify-content:center;background:#E62B15;color:#fff;font-weight:700;font-size:15px;padding:13px 30px;border-radius:100px;transition:background .2s,transform .2s;box-shadow:0 10px 24px -8px rgba(230,43,21,.5);" style-hover="background:#c31f0c;transform:translateY(-2px);color:#fff;">get seen</a>
               <div class="dfin" data-di="6" style="opacity:0;transform:translateY(14px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);font-weight:500;font-size:clamp(11.5px,1vw,12px);color:#9a9aa0;margin-top:8px;">free for candidates · early members get matched first</div>
@@ -1112,7 +1322,9 @@
   </section>
 
   <!-- ===================== MISSION ===================== -->
-  <section data-screen-label="Mission" style="position:relative;padding:clamp(60px,19vh,240px) 0 clamp(48px,15vh,190px);display:flex;flex-direction:column;align-items:center;text-align:center;">
+  <section id="mission" data-screen-label="Mission" style="position:relative;isolation:isolate;padding:clamp(60px,19vh,240px) 0 clamp(48px,15vh,190px);display:flex;flex-direction:column;align-items:center;text-align:center;">
+    <div class="mission-grid" aria-hidden="true"></div>
+
     <div ref="{{ setPolLayer }}" style="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
       <div class="pol" data-tilt="-8" style="position:absolute;left:3.5%;top:16%;width:min(clamp(152px,13.6vw,202px), calc((100vw - 700px) / 2 - 26px));opacity:0;pointer-events:none;background:#fff;padding:9px 9px 50px;border-radius:3px;box-shadow:0 14px 26px -12px rgba(20,20,30,.32),0 2px 5px -1px rgba(20,20,30,.1);will-change:transform,opacity;">
         <div style="width:100%;aspect-ratio:1/1;overflow:hidden;background:#f1f1f2;">
@@ -1122,7 +1334,7 @@
       </div>
       <div class="pol" data-tilt="6" style="position:absolute;left:7%;top:44%;width:min(clamp(152px,13.6vw,202px), calc((100vw - 700px) / 2 - 26px));opacity:0;pointer-events:none;background:#fff;padding:9px 9px 50px;border-radius:3px;box-shadow:0 14px 26px -12px rgba(20,20,30,.32),0 2px 5px -1px rgba(20,20,30,.1);will-change:transform,opacity;">
         <div style="width:100%;aspect-ratio:1/1;overflow:hidden;background:#f1f1f2;">
-          <img src="uploads/imperial haqqathon.png" alt="photo from the Imperial Haqqathon" style="width:100%;height:100%;object-fit:contain;display:block;">
+          <img src="uploads/imperial-haqqathon-optimized.webp" alt="photo from the Imperial Haqqathon" style="width:100%;height:100%;object-fit:contain;display:block;">
         </div>
         <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:13px;font-weight:500;color:#9a9aa0;">imperial haqqathon</div>
       </div>
@@ -1178,7 +1390,7 @@
 
     <div class="dfin" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);width:min(700px,90vw);display:flex;flex-direction:column;align-items:center;gap:20px;margin-top:clamp(34px,4.5vh,54px);">
       <p style="margin:0;font-weight:500;font-size:clamp(15px,1.2vw,16.5px);line-height:1.6;color:#5f5f66;text-wrap:pretty;">every offer made through the platform works towards that goal. so does every room uncooked labs opens.</p>
-      <a href="#" style="font-weight:600;font-size:15px;color:#5f5f66;display:inline-flex;align-items:center;gap:7px;transition:color .2s;" style-hover="color:#E62B15;">the full story, from our founder <span>→</span></a>
+      <a href="founders-letter.html" style="font-weight:600;font-size:15px;color:#5f5f66;display:inline-flex;align-items:center;gap:7px;transition:color .2s;" style-hover="color:#E62B15;">the full story, from our founder <span>→</span></a>
       <div style="font-weight:500;font-size:12px;line-height:1.5;color:#b3b3b9;">sources: ONS · Adzuna via The Guardian · ISE via Fortune · iHire via Fortune · NatWest &amp; Beauhurst.</div>
     </div>
 
@@ -1196,44 +1408,72 @@
        look like an unequal gap. change this only alongside the mission padding. -->
   <section data-screen-label="Early users" style="position:relative;padding:clamp(30px,5vh,70px) 24px calc(clamp(48px,15vh,190px) - 18px);display:flex;flex-direction:column;align-items:center;text-align:center;">
 
-    <h2 class="dfin" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(34px,4.2vw,50px);letter-spacing:-0.03em;line-height:1;color:#111;text-wrap:balance;"><span style="font-style:italic;color:#E62B15;">early users,</span> in their words</h2>
+    <!-- barely-there brand glyphs behind the heading and cards. #EDEBE6 is
+         baked into both SVGs, which is why no colour is set here. desktop and
+         tablet only -- on a phone there is no spare whitespace to fill. -->
+    <div class="tmn-deco" aria-hidden="true">
+      <img class="dc-ga" src="uploads/uncooked glyph.svg" alt="">
+      <img class="dc-gb" src="uploads/uncooked glyph.svg" alt="">
+      <img class="dc-gc" src="uploads/uncooked glyph.svg" alt="">
+      <img class="dc-gd" src="uploads/uncooked glyph.svg" alt="">
+      <img class="dc-sa" src="uploads/star.svg" alt="">
+      <img class="dc-sb" src="uploads/star.svg" alt="">
+      <img class="dc-sc" src="uploads/star.svg" alt="">
+      <img class="dc-sd" src="uploads/star.svg" alt="">
+      <img class="dc-se" src="uploads/star.svg" alt="">
+      <img class="dc-sf" src="uploads/star.svg" alt="">
+      <img class="dc-ge" src="uploads/uncooked glyph.svg" alt="">
+      <img class="dc-sg" src="uploads/star.svg" alt="">
+    </div>
+
+    <div class="tmn-head">
+      <h2 class="dfin" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(54px,5.5vw,63px);letter-spacing:-0.03em;line-height:0.95;color:#313131;max-width:15ch;text-wrap:balance;">what our early users are saying.</h2>
+    </div>
 
     <div class="tmn-grid">
 
       <!-- 1 · rejection -->
-      <figure class="tmn dfin" data-di="1" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);">
+      <figure class="tmn dfin" data-di="1" style="opacity:0;transform:translateY(26px);transition:opacity 1s cubic-bezier(.33,.9,.4,1),transform 1s cubic-bezier(.22,.8,.3,1);">
+        <div class="tmn-top">
+          <!-- drop a photo in with <img src="uploads/....webp" alt=""> or set initials as text -->
+          <span class="tmn-avatar"></span>
+          <span class="tmn-track">[track]</span>
+        </div>
+        <span class="tmn-mark" aria-hidden="true">“</span>
         <blockquote class="tmn-bubble">didn't get the role. but I heard back in 5 days with an actual reason. first time that's ever happened. I'll be using it again.</blockquote>
         <figcaption class="tmn-meta">
-          <!-- swap the icon for <img src="uploads/....webp" alt=""> or initials -->
-          <span class="tmn-avatar"><i data-lucide="user" style="width:17px;height:17px;"></i></span>
-          <span class="tmn-who">
-            <span class="tmn-line"><span class="tmn-name">[first name]</span><span class="tmn-track">[track]</span></span>
-            <span class="tmn-context">applied for a [role type], [month]</span>
-          </span>
+          <span class="tmn-name">[first name]</span>
+          <span class="tmn-context">applied for a [role type], [month]</span>
         </figcaption>
       </figure>
 
       <!-- 2 · outcome (candidate's own words only -- founder quotes live on the hiring page) -->
-      <figure class="tmn dfin" data-di="2" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);">
+      <figure class="tmn dfin" data-di="2" style="opacity:0;transform:translateY(26px);transition:opacity 1s cubic-bezier(.33,.9,.4,1),transform 1s cubic-bezier(.22,.8,.3,1);">
+        <div class="tmn-top">
+          <!-- drop a photo in with <img src="uploads/....webp" alt=""> or set initials as text -->
+          <span class="tmn-avatar"></span>
+          <span class="tmn-track">[track]</span>
+        </div>
+        <span class="tmn-mark" aria-hidden="true">“</span>
         <blockquote class="tmn-bubble">got the role. verified once, applied from my phone, had a call booked within the week.</blockquote>
         <figcaption class="tmn-meta">
-          <span class="tmn-avatar"><i data-lucide="user" style="width:17px;height:17px;"></i></span>
-          <span class="tmn-who">
-            <span class="tmn-line"><span class="tmn-name">[first name]</span><span class="tmn-track">[track]</span></span>
-            <span class="tmn-context">now at [startup]</span>
-          </span>
+          <span class="tmn-name">[first name]</span>
+          <span class="tmn-context">now at [startup]</span>
         </figcaption>
       </figure>
 
       <!-- 3 · ease -->
-      <figure class="tmn dfin" data-di="3" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);">
-        <blockquote class="tmn-bubble">took me under an hour to get verified. no CV, no cover letter, no rewriting my story 10 times.</blockquote>
+      <figure class="tmn dfin" data-di="3" style="opacity:0;transform:translateY(26px);transition:opacity 1s cubic-bezier(.33,.9,.4,1),transform 1s cubic-bezier(.22,.8,.3,1);">
+        <div class="tmn-top">
+          <!-- drop a photo in with <img src="uploads/....webp" alt=""> or set initials as text -->
+          <span class="tmn-avatar"></span>
+          <span class="tmn-track">[track]</span>
+        </div>
+        <span class="tmn-mark" aria-hidden="true">“</span>
+        <blockquote class="tmn-bubble">took me one evening to get verified. no CV, no cover letter, no rewriting my story 10 times.</blockquote>
         <figcaption class="tmn-meta">
-          <span class="tmn-avatar"><i data-lucide="user" style="width:17px;height:17px;"></i></span>
-          <span class="tmn-who">
-            <span class="tmn-line"><span class="tmn-name">[first name]</span><span class="tmn-track">[track]</span></span>
-            <span class="tmn-context">[university or city]</span>
-          </span>
+          <span class="tmn-name">[first name]</span>
+          <span class="tmn-context">[university or city]</span>
         </figcaption>
       </figure>
 
@@ -1249,7 +1489,9 @@
        list in question 2 is the same seven as the proof strip above, on purpose --
        if one list changes, change both. capped at 8: a new question means an old
        one comes out. -->
-  <section data-screen-label="FAQ" style="position:relative;padding:clamp(30px,5vh,70px) 24px clamp(90px,16vh,200px);display:flex;flex-direction:column;align-items:center;text-align:center;">
+  <section data-screen-label="FAQ" style="position:relative;isolation:isolate;padding:clamp(30px,5vh,70px) 24px clamp(90px,16vh,200px);display:flex;flex-direction:column;align-items:center;text-align:center;">
+    <div class="faq-grid" aria-hidden="true"></div>
+
 
     <h2 class="dfin" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(34px,4.2vw,50px);letter-spacing:-0.03em;line-height:1;color:#111;text-wrap:balance;">FAQs</h2>
 
@@ -1258,11 +1500,15 @@
     <div class="faq-list dfin" data-di="1" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);">
       <details class="faq-item" name="uc-faq">
         <summary class="faq-q">what does the 7 day answer actually mean?<span class="faq-chev" aria-hidden="true"><i data-lucide="chevron-down" style="width:19px;height:19px;"></i></span></summary>
-        <p class="faq-a">apply to any role on the platform and the startup replies within 7 days. a real human, a real decision, and a reason if it's a no. that's the rule every startup signs up to. the tracker's 6,000+ external jobs work differently: you apply to those direct on the company's own site, so the 7 days doesn't cover them.</p>
+        <p class="faq-a">apply to any role through us and the startup replies within 7 days. a real human, a real decision, and a reason if it's a no. that's the rule every startup signs up to. the tracker's 6,000+ external jobs work differently: you apply to those direct on the company's own site, so the 7 days doesn't cover them.</p>
+      </details>
+      <details class="faq-item" name="uc-faq">
+        <summary class="faq-q">what happens after I apply?<span class="faq-chev" aria-hidden="true"><i data-lucide="chevron-down" style="width:19px;height:19px;"></i></span></summary>
+        <p class="faq-a">you'll see your application is under review. founders see everyone who applies, and we shortlist the strongest fits for them. shortlisted or not, you'll hear back within 7 days from an actual human at the startup. and once you're in the pool, you don't always have to apply: if you're a strong fit for a role, we'll flag you to the founder anyway.</p>
       </details>
       <details class="faq-item" name="uc-faq">
         <summary class="faq-q">who else is using it?<span class="faq-chev" aria-hidden="true"><i data-lucide="chevron-down" style="width:19px;height:19px;"></i></span></summary>
-        <p class="faq-a">students and grads from across the UK. Oxford, Cambridge, Imperial, UCL, KCL, Manchester, Edinburgh, and dozens more. it's not an elite club. if you can build something and show it, you're in.</p>
+        <p class="faq-a">students and grads from across the UK, Europe and North America, from 55+ universities. some from Oxford and Imperial, plenty from everywhere else. we don't filter by university. if you can show what you can do, you're in.</p>
       </details>
       <details class="faq-item" name="uc-faq">
         <summary class="faq-q">is it free?<span class="faq-chev" aria-hidden="true"><i data-lucide="chevron-down" style="width:19px;height:19px;"></i></span></summary>
@@ -1270,15 +1516,15 @@
       </details>
       <details class="faq-item" name="uc-faq">
         <summary class="faq-q">do I need a CV or experience?<span class="faq-chev" aria-hidden="true"><i data-lucide="chevron-down" style="width:19px;height:19px;"></i></span></summary>
-        <p class="faq-a">no CV. your passport replaces it: a 60 second video pitch and a walkthrough of the best thing you've made. a uni project, a side project, a hackathon build. if you made it and can explain it, it counts.</p>
+        <p class="faq-a">no CV. your passport replaces it: a 60 second video pitch and a walkthrough of the best thing you've made or done. a uni project, a side project, a hackathon build, a campaign you ran, a society you grew. if you did it and can explain it, it counts. it takes 2 hours, once, and you can redo it whenever you want to improve.</p>
+      </details>
+      <details class="faq-item" name="uc-faq">
+        <summary class="faq-q">what if I don't meet the bar yet?<span class="faq-chev" aria-hidden="true"><i data-lucide="chevron-down" style="width:19px;height:19px;"></i></span></summary>
+        <p class="faq-a">you'll see exactly where to improve. redo it whenever you're ready. in the meantime, the tracker's 6,000+ roles stay open to you, and we'll point you to smaller startups and student startups where you can build more proof. platform roles open up once you meet the bar.</p>
       </details>
       <details class="faq-item" name="uc-faq">
         <summary class="faq-q">what kind of roles and startups?<span class="faq-chev" aria-hidden="true"><i data-lucide="chevron-down" style="width:19px;height:19px;"></i></span></summary>
-        <p class="faq-a">early stage, VC backed startups hiring across software, marketing, design and hardware. the kind of role where you get real responsibility in year 1, not year 5.</p>
-      </details>
-      <details class="faq-item" name="uc-faq">
-        <summary class="faq-q">how long does verification take?<span class="faq-chev" aria-hidden="true"><i data-lucide="chevron-down" style="width:19px;height:19px;"></i></span></summary>
-        <p class="faq-a">set aside 2 hours and do it properly. after that you never repeat it. one passport, every application.</p>
+        <p class="faq-a">early stage, VC backed startups, mostly on project based roles across software, marketing, design, hardware and ops. early career to mid career, including experienced startup operators. year five responsibility in year one.</p>
       </details>
       <details class="faq-item" name="uc-faq">
         <summary class="faq-q">what if I don't get matched straight away?<span class="faq-chev" aria-hidden="true"><i data-lucide="chevron-down" style="width:19px;height:19px;"></i></span></summary>
@@ -1286,10 +1532,9 @@
       </details>
       <details class="faq-item" name="uc-faq">
         <summary class="faq-q">what happens to my video and my work?<span class="faq-chev" aria-hidden="true"><i data-lucide="chevron-down" style="width:19px;height:19px;"></i></span></summary>
-        <p class="faq-a">founders see it when you apply to their role. nobody else. we never sell it, share it, or train anything on it. delete it whenever you want.</p>
+        <p class="faq-a">founders see it when you apply to their role. nobody else. we never sell it, share it, or train anything on it. private work can be redacted, or shared with access you control. delete it whenever you want.</p>
       </details>
     </div>
-
   </section>
 
   <!-- FAQPage markup for search: the questions and answers here must stay
@@ -1304,7 +1549,15 @@
       "name": "what does the 7 day answer actually mean?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "apply to any role on the platform and the startup replies within 7 days. a real human, a real decision, and a reason if it's a no. that's the rule every startup signs up to. the tracker's 6,000+ external jobs work differently: you apply to those direct on the company's own site, so the 7 days doesn't cover them."
+        "text": "apply to any role through us and the startup replies within 7 days. a real human, a real decision, and a reason if it's a no. that's the rule every startup signs up to. the tracker's 6,000+ external jobs work differently: you apply to those direct on the company's own site, so the 7 days doesn't cover them."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "what happens after I apply?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "you'll see your application is under review. founders see everyone who applies, and we shortlist the strongest fits for them. shortlisted or not, you'll hear back within 7 days from an actual human at the startup. and once you're in the pool, you don't always have to apply: if you're a strong fit for a role, we'll flag you to the founder anyway."
       }
     },
     {
@@ -1312,7 +1565,7 @@
       "name": "who else is using it?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "students and grads from across the UK. Oxford, Cambridge, Imperial, UCL, KCL, Manchester, Edinburgh, and dozens more. it's not an elite club. if you can build something and show it, you're in."
+        "text": "students and grads from across the UK, Europe and North America, from 55+ universities. some from Oxford and Imperial, plenty from everywhere else. we don't filter by university. if you can show what you can do, you're in."
       }
     },
     {
@@ -1328,7 +1581,15 @@
       "name": "do I need a CV or experience?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "no CV. your passport replaces it: a 60 second video pitch and a walkthrough of the best thing you've made. a uni project, a side project, a hackathon build. if you made it and can explain it, it counts."
+        "text": "no CV. your passport replaces it: a 60 second video pitch and a walkthrough of the best thing you've made or done. a uni project, a side project, a hackathon build, a campaign you ran, a society you grew. if you did it and can explain it, it counts. it takes 2 hours, once, and you can redo it whenever you want to improve."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "what if I don't meet the bar yet?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "you'll see exactly where to improve. redo it whenever you're ready. in the meantime, the tracker's 6,000+ roles stay open to you, and we'll point you to smaller startups and student startups where you can build more proof. platform roles open up once you meet the bar."
       }
     },
     {
@@ -1336,15 +1597,7 @@
       "name": "what kind of roles and startups?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "early stage, VC backed startups hiring across software, marketing, design and hardware. the kind of role where you get real responsibility in year 1, not year 5."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "how long does verification take?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "set aside 2 hours and do it properly. after that you never repeat it. one passport, every application."
+        "text": "early stage, VC backed startups, mostly on project based roles across software, marketing, design, hardware and ops. early career to mid career, including experienced startup operators. year five responsibility in year one."
       }
     },
     {
@@ -1360,7 +1613,7 @@
       "name": "what happens to my video and my work?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "founders see it when you apply to their role. nobody else. we never sell it, share it, or train anything on it. delete it whenever you want."
+        "text": "founders see it when you apply to their role. nobody else. we never sell it, share it, or train anything on it. private work can be redacted, or shared with access you control. delete it whenever you want."
       }
     }
   ]
@@ -1368,7 +1621,9 @@
   </script>
 
   <!-- ===================== FINAL CTA ===================== -->
-  <section data-screen-label="Final CTA" data-reveal-center="" style="position:relative;overflow:hidden;min-height:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px clamp(60px,19vh,240px);overflow:hidden;">
+  <section data-screen-label="Final CTA" data-reveal-center="" style="isolation:isolate;position:relative;overflow:hidden;min-height:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px clamp(60px,19vh,240px);overflow:hidden;">
+    <div class="sec-grid" aria-hidden="true"></div>
+
 
 
     <!-- paper-plane trails: crop with the viewport, hidden on mobile -->
@@ -1379,11 +1634,14 @@
     <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;">
       <h2 class="dfin" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(34px,4.2vw,50px);letter-spacing:-0.03em;line-height:1;color:#111;max-width:22ch;text-wrap:balance;">tired of the <span style="font-style:italic;color:#E62B15;">cooked</span> job market?</h2>
 
-      <p class="dfin" data-di="1" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:30px 0 0;font-weight:500;font-size:clamp(15px,1.3vw,17px);line-height:1.5;color:#5f5f66;max-width:44ch;text-wrap:pretty;">get seen. early members get matched first. while you wait, the tracker's already live. save roles today, get matched when we launch.</p>
+      <!-- subheading carries the ask, body carries the reason to act now. the
+         weight/colour split is what separates them -- same family, same width. -->
+      <p class="dfin" data-di="1" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:28px 0 0;font-weight:600;font-size:clamp(16px,1.35vw,18.5px);line-height:1.45;letter-spacing:-0.015em;color:#5f5f66;max-width:34ch;text-wrap:balance;">get seen. early members get matched first.</p>
+
+      <p class="dfin" data-di="2" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin:12px 0 0;font-weight:500;font-size:clamp(14.5px,1.2vw,16px);line-height:1.55;color:#5f5f66;max-width:42ch;text-wrap:pretty;">the tracker's live today. save roles now, and get matched as new ones open.</p>
 
       <a href="https://tally.so/r/7RRlp9" target="_blank" rel="noopener" class="dfin" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin-top:26px;display:inline-flex;align-items:center;justify-content:center;background:#E62B15;color:#fff;font-weight:700;font-size:15px;padding:13px 30px;border-radius:100px;transition:background .2s,transform .2s;box-shadow:0 10px 24px -8px rgba(230,43,21,.5);" style-hover="background:#c31f0c;transform:translateY(-2px);color:#fff;">get seen</a>
 
-      <div class="dfin" data-di="1" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin-top:16px;font-weight:500;font-size:14px;color:#9a9aa0;">free for candidates · early members get matched first</div>
 
       <a href="#" class="dfin" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);margin-top:34px;font-weight:600;font-size:15px;color:#5f5f66;display:inline-flex;align-items:center;gap:7px;transition:color .2s;" style-hover="color:#E62B15;">looking to hire instead? we got you <span>→</span></a>
     </div>
@@ -1432,7 +1690,6 @@ class Component extends DCLogic {
   componentDidMount() {
     if (window.lucide) window.lucide.createIcons();
     this.startHeroIntro();
-    this.startMarquee();
     this.positionCargo();
     this.ticking = false;
     this.onScroll = () => {
@@ -1517,25 +1774,6 @@ class Component extends DCLogic {
     if (this._tpWatch != null) clearInterval(this._tpWatch);
     window.removeEventListener('load', this.onResize);
     if (this._heroRaf) clearTimeout(this._heroRaf);
-    if (window.__pfTimer) clearTimeout(window.__pfTimer);
-  }
-
-  startMarquee() {
-    if (window.__pfTimer) clearTimeout(window.__pfTimer);
-    if (window.__pfX == null) window.__pfX = 0;
-    const tick = () => {
-      const el = document.querySelector('.pf-track');
-      if (el) {
-        const half = el.scrollWidth / 2;
-        if (half > 0) {
-          window.__pfX -= 0.5;              // ~30px/s
-          while (window.__pfX <= -half) window.__pfX += half;
-          el.style.transform = 'translateX(' + window.__pfX.toFixed(2) + 'px)';
-        }
-      }
-      window.__pfTimer = setTimeout(tick, 16);
-    };
-    window.__pfTimer = setTimeout(tick, 16);
   }
 
   startHeroIntro() {
