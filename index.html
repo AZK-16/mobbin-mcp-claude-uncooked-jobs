@@ -52,7 +52,7 @@
 <script src="./support.js"></script>
 </head>
 <body>
-<x-dc>
+  <!-- EXPERIMENT: soft red/orange glow behind the phone; delete to revert --><x-dc>
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
@@ -170,8 +170,40 @@
   .cq:hover{z-index:60;}
   .cqp{transition:box-shadow .25s ease;}
   .cq:hover .cqp{box-shadow:0 14px 32px -10px rgba(20,20,30,0.3),0 3px 10px -2px rgba(20,20,30,0.12);}
-  .cql{max-width:0;padding-left:0;opacity:0;overflow:hidden;transition:max-width .34s cubic-bezier(.22,.7,.3,1),padding-left .34s cubic-bezier(.22,.7,.3,1),opacity .2s ease;}
-  .cq:hover .cql{max-width:260px;padding-left:20px;opacity:1;}
+  /* orbit badge labels: always shown next to the icon (used to be collapsed
+     and only slide out on hover); hover now just lifts the pill's shadow */
+  .cql{max-width:260px;padding-left:20px;opacity:1;overflow:hidden;}
+  /* EXPERIMENT: squarer pills, roomier padding, and the navbar's light-to-
+     slightly-darker grey gradient stroke (white fill clipped to the padding
+     box, gradient showing through the transparent border). overrides the
+     inline pill styles; delete this block to revert. */
+  .cqp{border-radius:18px !important;border:1px solid transparent !important;background-color:transparent !important;background-image:linear-gradient(180deg,#fff,#fff),linear-gradient(180deg,#e7e7e9 0%,#DCDCDF 55%,#D0D0D4 100%) !important;background-origin:border-box !important;background-clip:padding-box,border-box !important;padding-right:12px;}
+  /* satoshi bold, and a tighter text-to-icon gap: icon cell narrowed from
+     70px to 46px, with padding-right making up the difference so the icon's
+     centre still sits 35px from the pill's right edge (on the orbit line) */
+  .cqp .cql{padding-left:26px;font-weight:700 !important;}
+  .cqp > span:last-child{width:46px !important;}
+  /* varied pill sizes, scaled around the icon centre so each icon stays on
+     its orbit line */
+  .cqp{transform-origin:calc(100% - 35px) 50%;}
+  .cq:nth-child(7n+2) .cqp,.cq:nth-child(7n+7) .cqp{transform:scale(.8);}
+  .cq:nth-child(7n+4) .cqp{transform:scale(.9);}
+  .cq:nth-child(7n+3) .cqp{transform:scale(1.12);}
+  .cq:nth-child(7n+6) .cqp{transform:scale(1.2);}
+  /* solid rings: the left-to-right gradient needs a fixed orientation,
+     so the scroll-linked rotation is switched off (invisible on a solid
+     line anyway, but it would tilt the gradient) */
+  .hiw-rings{transform:none !important;}
+  /* EXPERIMENT: step numbers (01-04) hidden for now */
+  .hiw-copy .copy > div:first-child{display:none;}
+  /* EXPERIMENT (desktop): big side title above the step copy, replacing the
+     centred top title. the wrap's top edge is set by script; the title hangs
+     above it and the copy below it. */
+  .hiw-title-side{display:none;}
+  @media (min-width:1025px){
+    .hiw-head-top{display:none;}
+    .hiw-title-side{display:block;position:absolute;left:0;bottom:22px;margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(64px,5.6vw,92px);letter-spacing:-0.03em;line-height:.9;color:#111;white-space:nowrap;}
+  }
   .s1,.s2,.s3{opacity:0;}
   .l1,.l2,.l3{opacity:0;}
 
@@ -617,18 +649,19 @@
 </template>
 </helmet>
 
-<div style="font-family:'Satoshi',system-ui,sans-serif;color:#111;background:#fcfbf9;overflow-x:clip;">
+<!-- page background colour change -->
+<div style="font-family:'Satoshi',system-ui,sans-serif;color:#111;background:#fdf9f9;overflow-x:clip;">
 
   <!-- ===================== FIXED NAV ===================== -->
   <nav ref="{{ setNav }}" class="site-nav" aria-label="Main" style="position:fixed;top:26px;left:50%;transform:translateX(-50%);z-index:200;width:max-content;max-width:94%;display:flex;align-items:center;gap:28px;padding:6px 7px 6px 15px;backdrop-filter:blur(22px) saturate(2.2);-webkit-backdrop-filter:blur(22px) saturate(2.2);border:1px solid transparent;border-radius:100px;background-image:linear-gradient(180deg,rgba(255,255,255,0.86),rgba(255,255,255,0.80)),linear-gradient(180deg,#e7e7e9 0%,#DCDCDF 55%,#D0D0D4 100%);background-origin:border-box;background-clip:padding-box,border-box;box-shadow:0 8px 24px -7px rgba(20,20,30,0.16),0 3px 7px -1px rgba(20,20,30,0.09);transition:box-shadow .3s ease,transform .3s ease,background-image .45s ease;">
     <span class="nav-veil" style="position:absolute;inset:-1px;border-radius:100px;background:linear-gradient(180deg,rgba(30,30,34,0.90),rgba(30,30,34,0.86));opacity:0;transition:opacity .55s ease;pointer-events:none;"></span>
     <a href="#" class="nav-logo-wrap" style="position:relative;display:flex;align-items:center;text-decoration:none;color:inherit;">
-      <img class="nav-logo" src="uploads/m-nav-mark.png" alt="uncooked (BETA)" style="height:32px;width:auto;display:block;margin-right:-15px;transition:opacity .55s ease;">
-      <img class="nav-logo-dark" src="uploads/m-nav-mark-dark.png" alt="" style="position:absolute;left:0;top:0;height:32px;width:auto;display:block;opacity:0;transition:opacity .55s ease;pointer-events:none;">
+      <img class="nav-logo" src="uploads/m-nav-mark.png" alt="uncooked (BETA)" style="height:28px;width:auto;display:block;margin-right:-13px;transition:opacity .55s ease;">
+      <img class="nav-logo-dark" src="uploads/m-nav-mark-dark.png" alt="" style="position:absolute;left:0;top:0;height:28px;width:auto;display:block;opacity:0;transition:opacity .55s ease;pointer-events:none;">
       <!-- the baked-in BETA badge in m-nav-mark-dark.png is a white pill; this masks it and
            redraws a dark pill with a white stroke + label for the dark nav state -->
-      <span class="nav-beta-dark" aria-hidden="true" style="position:absolute;left:115px;top:-2px;width:43px;height:21px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:#37373B;border:.5px solid #fff;opacity:0;transition:opacity .55s ease;pointer-events:none;">
-        <span style="font-size:8px;font-weight:700;letter-spacing:0.03em;color:#fff;line-height:1;">BETA</span>
+      <span class="nav-beta-dark" aria-hidden="true" style="position:absolute;left:101px;top:-2px;width:38px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:#37373B;border:.5px solid #fff;opacity:0;transition:opacity .55s ease;pointer-events:none;">
+        <span style="font-size:7px;font-weight:700;letter-spacing:0.03em;color:#fff;line-height:1;">BETA</span>
       </span>
     </a>
     <span class="nav-div" style="position:relative;width:1px;height:24px;background:rgba(0,0,0,0.10);flex:none;transition:background .45s ease;"></span>
@@ -721,7 +754,7 @@
     <div data-reveal="" style="position:sticky;top:0;height:100vh;width:100%;overflow:hidden;">
 
 
-      <header class="dfin" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);position:absolute;top:max(10vh,100px);left:0;width:100%;text-align:center;z-index:12;pointer-events:none;">
+      <header class="dfin hiw-head-top" data-di="0" style="opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);position:absolute;top:max(10vh,100px);left:0;width:100%;text-align:center;z-index:12;pointer-events:none;">
         <h2 class="hiw-title" style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(34px,6vw,50px);letter-spacing:-0.03em;line-height:1;color:#111;">how it works.</h2>
       </header>
 
@@ -767,9 +800,17 @@
 
         <!-- dashed rings -->
         <svg ref="{{ setRings }}" class="hiw-rings" viewBox="0 0 1100 1100" style="position:absolute;width:100%;height:100%;pointer-events:none;overflow:visible;">
-          <circle cx="550" cy="550" r="372" stroke="rgba(0,0,0,0.19)" stroke-width="1.5" stroke-dasharray="5 7" fill="none"></circle>
-          <circle cx="550" cy="550" r="487" stroke="rgba(0,0,0,0.175)" stroke-width="1.5" stroke-dasharray="5 7" fill="none"></circle>
-          <circle cx="550" cy="550" r="602" stroke="rgba(0,0,0,0.16)" stroke-width="1.5" stroke-dasharray="5 7" fill="none"></circle>
+          <!-- EXPERIMENT: solid rings, darker grey on the left fading lighter
+               towards the right (was dashed rgba(0,0,0,.16-.19)) -->
+          <defs>
+            <linearGradient id="hiwRingGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#000" stop-opacity="0.17"></stop>
+              <stop offset="1" stop-color="#000" stop-opacity="0.09"></stop>
+            </linearGradient>
+          </defs>
+          <circle cx="550" cy="550" r="372" stroke="url(#hiwRingGrad)" stroke-width="1.5" fill="none"></circle>
+          <circle cx="550" cy="550" r="487" stroke="url(#hiwRingGrad)" stroke-width="1.5" fill="none" opacity="0.92"></circle>
+          <circle cx="550" cy="550" r="602" stroke="url(#hiwRingGrad)" stroke-width="1.5" fill="none" opacity="0.84"></circle>
         </svg>
 
         <!-- orbit (rotates) -->
@@ -783,13 +824,13 @@
                 <span style="flex:none;width:70px;height:70px;display:flex;align-items:center;justify-content:center;color:#111;"><svg viewBox="0 0 24 24" fill="currentColor" style="width:27px;height:27px;display:block;"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg></span>
               </div>
             </div>
-            <div class="ci-1 co cq" style="width:70px;height:70px;" data-r="487" data-a="150">
+            <div class="ci-1 co cq" style="width:70px;height:70px;" data-r="487" data-a="161">
               <div class="cqp" style="position:absolute;right:0;top:0;height:100%;display:flex;align-items:center;justify-content:flex-end;background:#fff;border:1px solid rgba(0,0,0,0.18);border-radius:999px;box-shadow:0 10px 26px -12px rgba(20,20,30,0.24),0 2px 6px -1px rgba(20,20,30,0.08);white-space:nowrap;">
                 <span class="cql" style="font-weight:700;font-size:16px;letter-spacing:-0.01em;color:#111;">resume</span>
                 <span style="flex:none;width:70px;height:70px;display:flex;align-items:center;justify-content:center;color:#111;"><i data-lucide="file" style="width:26px;height:26px;"></i></span>
               </div>
             </div>
-            <div class="ci-1 co cq" style="width:70px;height:70px;" data-r="602" data-a="172">
+            <div class="ci-1 co cq" style="width:70px;height:70px;" data-r="602" data-a="175">
               <div class="cqp" style="position:absolute;right:0;top:0;height:100%;display:flex;align-items:center;justify-content:flex-end;background:#fff;border:1px solid rgba(0,0,0,0.18);border-radius:999px;box-shadow:0 10px 26px -12px rgba(20,20,30,0.24),0 2px 6px -1px rgba(20,20,30,0.08);white-space:nowrap;">
                 <span class="cql" style="font-weight:700;font-size:16px;letter-spacing:-0.01em;color:#111;">cover letter</span>
                 <span style="flex:none;width:70px;height:70px;display:flex;align-items:center;justify-content:center;color:#111;"><i data-lucide="file-text" style="width:26px;height:26px;"></i></span>
@@ -801,7 +842,7 @@
                 <span style="flex:none;width:70px;height:70px;display:flex;align-items:center;justify-content:center;color:#111;"><i data-lucide="user-round" style="width:26px;height:26px;"></i></span>
               </div>
             </div>
-            <div class="ci-1 co cq" style="width:70px;height:70px;" data-r="487" data-a="204">
+            <div class="ci-1 co cq" style="width:70px;height:70px;" data-r="487" data-a="198">
               <div class="cqp" style="position:absolute;right:0;top:0;height:100%;display:flex;align-items:center;justify-content:flex-end;background:#fff;border:1px solid rgba(0,0,0,0.18);border-radius:999px;box-shadow:0 10px 26px -12px rgba(20,20,30,0.24),0 2px 6px -1px rgba(20,20,30,0.08);white-space:nowrap;">
                 <span class="cql" style="font-weight:700;font-size:16px;letter-spacing:-0.01em;color:#111;">code</span>
                 <span style="flex:none;width:70px;height:70px;display:flex;align-items:center;justify-content:center;color:#111;"><i data-lucide="code" style="width:26px;height:26px;"></i></span>
@@ -926,7 +967,7 @@
           <img class="screen" data-screen="0" src="uploads/m-step1b.webp" alt="build your passport" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:100%;width:auto;max-width:none;display:block;opacity:1;filter:drop-shadow(0 40px 80px rgba(0,0,0,0.16)) drop-shadow(0 18px 40px rgba(0,0,0,0.08));">
           <img class="screen" data-screen="1" src="uploads/m-step2b.webp" alt="get matched to roles" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:100%;width:auto;max-width:none;display:block;opacity:0;filter:drop-shadow(0 40px 80px rgba(0,0,0,0.16)) drop-shadow(0 18px 40px rgba(0,0,0,0.08));">
           <img class="screen" data-screen="2" src="uploads/m-step3.webp" alt="apply" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:100%;width:auto;max-width:none;display:block;opacity:0;filter:drop-shadow(0 40px 80px rgba(0,0,0,0.16)) drop-shadow(0 18px 40px rgba(0,0,0,0.08));">
-          <img class="screen" data-screen="3" src="uploads/m-step4b.webp" alt="hear back" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:100%;width:auto;max-width:none;display:block;opacity:0;filter:drop-shadow(0 40px 80px rgba(0,0,0,0.16)) drop-shadow(0 18px 40px rgba(0,0,0,0.08));">
+          <img class="screen" data-screen="3" src="uploads/m-step4b.webp" alt="hear back" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(1.0019);height:100%;width:auto;max-width:none;display:block;opacity:0;filter:drop-shadow(0 40px 80px rgba(0,0,0,0.16)) drop-shadow(0 18px 40px rgba(0,0,0,0.08));">
         </div><!-- /phone -->
 
         <!-- floating booked card (screen 4) -->
@@ -935,6 +976,8 @@
 
       <!-- RIGHT COPY -->
       <div ref="{{ setCopyWrap }}" class="hiw-copy" style="position:absolute;left:calc(50% + 280px);top:50%;transform:translateY(-50%);width:min(28vw,400px);z-index:50;">
+        <!-- EXPERIMENT (desktop): large title sitting just above the step copy -->
+        <h2 class="hiw-title-side dfin" data-di="0" style="opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);">how it works.</h2>
         <div class="copy" data-copy="0" style="position:absolute;top:50%;left:0;width:100%;transform:translateY(-50%);opacity:1;">
           <div class="dfin" data-di="0" style="opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(42px,6.2vw,56px);color:#E62B15;line-height:0.86;margin-bottom:6px;letter-spacing:-0.02em;">01</div>
           <div class="dfin" data-di="0" style="opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.3,1);font-weight:700;font-size:clamp(25px,3.8vw,32px);letter-spacing:-0.03em;line-height:1.06;margin-bottom:12px;">build your passport</div>
@@ -1843,7 +1886,21 @@ class Component extends DCLogic {
       const phoneH = phone && phone.parentElement ? phone.parentElement.offsetHeight : 659;
       const sFit = Math.min(s, band / phoneH);
       this.scaleC = sFit;
-      const midPct = ((bandTop + bandBottom) / 2 / vh) * 100;
+      // EXPERIMENT (desktop): the title moves to the right column, so the phone
+      // alone grows to fill the band from just under the nav to the rail. the
+      // rings/orbit keep their size (centerpiece scale unchanged).
+      const mid = (bandTop + bandBottom) / 2;
+      let k = 1, lift = 0;
+      if (window.innerWidth > 1024) {
+        const expTop = 96;
+        // 0.9: fills ~90% of the band rather than all of it
+        k = Math.max(1, Math.min(1.3, 0.9 * (bandBottom - expTop) / (phoneH * sFit)));
+        // phone is centred in the taller band; rings/orbit stay centred where they were
+        lift = (mid - (expTop + bandBottom) / 2) / sFit;
+      }
+      this.phoneK = k;
+      if (phone && phone.parentElement) phone.parentElement.style.transform = k === 1 ? '' : `translateY(${(-lift).toFixed(1)}px) scale(${k.toFixed(3)}) rotate(2deg)`;
+      const midPct = (mid / vh) * 100;
       this.centerEl.style.top = midPct.toFixed(2) + '%';
       this.centerEl.style.transform = `translate(-50%,-50%) scale(${sFit})`;
     }
@@ -1852,7 +1909,19 @@ class Component extends DCLogic {
       const w = this.copyWrapEl.offsetWidth;
       const gap = 48;
       const needed = phoneHalf + gap + w;    // px right of center the copy needs
-      if (window.innerWidth / 2 - 24 < needed) {
+      if (window.innerWidth > 1024) {
+        // EXPERIMENT (desktop): title + heading + subheading stacked in the right
+        // column beside the enlarged phone; the wrap's top edge is the line
+        // between the title (above) and the step copy (below)
+        const expHalf = 159 * (this.scaleC || s) * (this.phoneK || 1);
+        this.copyWrapEl.style.left = `calc(50% + ${Math.round(expHalf + 64)}px)`;
+        this.copyWrapEl.style.top = '56%';
+        this.copyWrapEl.style.transform = 'none';
+        this.copyWrapEl.style.textAlign = 'left';
+        this.copyWrapEl.dataset.stack = '';
+        this.copyWrapEl.dataset.exp = '1';
+      } else if (window.innerWidth / 2 - 24 < needed) {
+        this.copyWrapEl.dataset.exp = '';
         // stack below the scaled phone, centered
         this.copyWrapEl.style.left = '50%';
         this.copyWrapEl.style.top = `calc(52% + ${310 * s}px)`;
@@ -1860,6 +1929,7 @@ class Component extends DCLogic {
         this.copyWrapEl.style.textAlign = 'center';
         this.copyWrapEl.dataset.stack = '1';
       } else {
+        this.copyWrapEl.dataset.exp = '';
         this.copyWrapEl.style.left = `calc(50% + ${phoneHalf + gap}px)`;
         this.copyWrapEl.style.top = '50%';
         this.copyWrapEl.style.transform = 'translateY(-50%)';
@@ -2437,7 +2507,10 @@ class Component extends DCLogic {
       const d = sf - i;
       const o = Math.max(0, 1 - Math.abs(d) * 1.7);
       el.style.opacity = o;
-      el.style.transform = `translateY(calc(-50% + ${d * 22}px))`;
+      // EXPERIMENT (desktop): copy hangs from the wrap's top edge instead of
+      // centring on it, so it always starts right under the side title
+      const base = this.copyWrapEl && this.copyWrapEl.dataset.exp === '1' ? '0px' : '-50%';
+      el.style.transform = `translateY(calc(${base} + ${d * 22}px))`;
       el.style.pointerEvents = o > 0.5 ? 'auto' : 'none';
     });
 
