@@ -173,11 +173,11 @@
   /* orbit badge labels: always shown next to the icon (used to be collapsed
      and only slide out on hover); hover now just lifts the pill's shadow */
   .cql{max-width:260px;padding-left:20px;opacity:1;overflow:hidden;}
-  /* EXPERIMENT: squarer pills, roomier padding, and the navbar's light-to-
-     slightly-darker grey gradient stroke (white fill clipped to the padding
+  /* EXPERIMENT: squarer pills, roomier padding, and a soft white-orange-red
+     gradient stroke (top to bottom) (white fill clipped to the padding
      box, gradient showing through the transparent border). overrides the
      inline pill styles; delete this block to revert. */
-  .cqp{border-radius:18px !important;border:1px solid transparent !important;background-color:transparent !important;background-image:linear-gradient(180deg,#fff,#fff),linear-gradient(180deg,#e7e7e9 0%,#DCDCDF 55%,#D0D0D4 100%) !important;background-origin:border-box !important;background-clip:padding-box,border-box !important;padding-right:12px;}
+  .cqp{border-radius:18px !important;border:1px solid transparent !important;background-color:transparent !important;background-image:linear-gradient(180deg,#fff,#fff),linear-gradient(180deg,#F5EEEA 0%,#F1CDBA 55%,#E9A691 100%) !important;background-origin:border-box !important;background-clip:padding-box,border-box !important;padding-right:12px;}
   /* satoshi bold, and a tighter text-to-icon gap: icon cell narrowed from
      70px to 46px, with padding-right making up the difference so the icon's
      centre still sits 35px from the pill's right edge (on the orbit line) */
@@ -200,6 +200,27 @@
      centred top title. the wrap's top edge is set by script; the title hangs
      above it and the copy below it. */
   .hiw-title-side{display:none;}
+  /* EXPERIMENT: floating red/orange circles around the phone, desktop layout only.
+     each floats a few px on its own timing */
+  .hiw-dots-wrap{display:none;}
+  @media (min-width:1025px){.hiw-dots-wrap{display:block;}}
+  .hiw-dot{position:absolute;overflow:visible;animation:dotFloat 7s ease-in-out infinite;}
+  @keyframes dotFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(2px,-6px)}}
+  @media (prefers-reduced-motion:reduce){.hiw-dot{animation:none;}}
+  /* EXPERIMENT: a few-pixel float on some pills (3 of every 7), each on its own
+     timing. uses the translate property so it stacks with the size scale */
+  .cq:nth-child(7n+1) .cqp{animation:pillFloat 6.4s ease-in-out infinite;}
+  .cq:nth-child(7n+4) .cqp{animation:pillFloat 7.6s ease-in-out -2.4s infinite;}
+  .cq:nth-child(7n+6) .cqp{animation:pillFloat 5.8s ease-in-out -4.1s infinite;}
+  @keyframes pillFloat{0%,100%{translate:0 0}50%{translate:0 -6px}}
+  @media (prefers-reduced-motion:reduce){.cqp{animation:none !important;}}
+  /* EXPERIMENT: background glyphs are #F8EFEA near the phone, easing to the
+     usual off-white further out. a tinted copy of each step's glyphs sits over
+     the off-white ones, revealed by a radial mask centred on the phone */
+  .wm-tint{position:absolute;inset:0;pointer-events:none;}
+  .wm-tint svg{stroke-width:1.1;}
+  .wm-tint-o svg{color:#F8EFEA !important;opacity:1 !important;}
+  .wm-tint-o{-webkit-mask-image:radial-gradient(ellipse 46% 52% at 50% 50%,#000 0%,rgba(0,0,0,.75) 35%,transparent 100%);mask-image:radial-gradient(ellipse 46% 52% at 50% 50%,#000 0%,rgba(0,0,0,.75) 35%,transparent 100%);}
   @media (min-width:1025px){
     .hiw-head-top{display:none;}
     .hiw-title-side{display:block;position:absolute;left:0;bottom:22px;margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(64px,5.6vw,92px);letter-spacing:-0.03em;line-height:.9;color:#111;white-space:nowrap;}
@@ -766,6 +787,15 @@
         <i data-lucide="contact-2" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
         <i data-lucide="contact-2" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
         <i data-lucide="file-text" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        <!-- EXPERIMENT: tinted copy for the radial glyph gradient -->
+        <div class="wm-tint wm-tint-o">
+          <i data-lucide="contact-2" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
+          <i data-lucide="file-text" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
+          <i data-lucide="file-text" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
+          <i data-lucide="contact-2" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
+          <i data-lucide="contact-2" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
+          <i data-lucide="file-text" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        </div>
       </div>
 
       <div class="wm-02" style="position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .8s ease;">
@@ -775,6 +805,15 @@
         <i data-lucide="puzzle" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
         <i data-lucide="puzzle" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
         <i data-lucide="zap" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        <!-- EXPERIMENT: tinted copy for the radial glyph gradient -->
+        <div class="wm-tint wm-tint-o">
+          <i data-lucide="puzzle" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
+          <i data-lucide="zap" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
+          <i data-lucide="zap" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
+          <i data-lucide="puzzle" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
+          <i data-lucide="puzzle" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
+          <i data-lucide="zap" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        </div>
       </div>
 
       <div class="wm-03" style="position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .8s ease;">
@@ -784,6 +823,15 @@
         <i data-lucide="file-audio" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
         <i data-lucide="file-audio" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
         <i data-lucide="mic" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        <!-- EXPERIMENT: tinted copy for the radial glyph gradient -->
+        <div class="wm-tint wm-tint-o">
+          <i data-lucide="file-audio" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
+          <i data-lucide="mic" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
+          <i data-lucide="mic" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
+          <i data-lucide="file-audio" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
+          <i data-lucide="file-audio" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
+          <i data-lucide="mic" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        </div>
       </div>
 
       <div class="wm-04" style="position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .8s ease;">
@@ -793,10 +841,35 @@
         <i data-lucide="message-square" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
         <i data-lucide="message-square" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
         <i data-lucide="trending-up" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        <!-- EXPERIMENT: tinted copy for the radial glyph gradient -->
+        <div class="wm-tint wm-tint-o">
+          <i data-lucide="message-square" style="position:absolute;left:37%;top:34%;width:clamp(217px,35vw,350px);height:clamp(217px,35vw,350px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-11deg);stroke-width:1.1;"></i>
+          <i data-lucide="trending-up" style="position:absolute;left:63%;top:70%;width:clamp(202px,32.5vw,325px);height:clamp(202px,32.5vw,325px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(12deg);stroke-width:1.1;"></i>
+          <i data-lucide="trending-up" style="position:absolute;left:8%;top:20%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(15deg);stroke-width:1.1;"></i>
+          <i data-lucide="message-square" style="position:absolute;left:15%;top:86%;width:clamp(177px,28.5vw,285px);height:clamp(177px,28.5vw,285px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-14deg);stroke-width:1.1;"></i>
+          <i data-lucide="message-square" style="position:absolute;left:92%;top:22%;width:clamp(186px,30vw,300px);height:clamp(186px,30vw,300px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(13deg);stroke-width:1.1;"></i>
+          <i data-lucide="trending-up" style="position:absolute;left:86%;top:86%;width:clamp(171px,27.5vw,275px);height:clamp(171px,27.5vw,275px);color:#F2F1EE;opacity:0.35;transform:translate(-50%,-50%) rotate(-10deg);stroke-width:1.1;"></i>
+        </div>
       </div>
 
       <!-- centerpiece: rings + orbit + phone -->
       <div ref="{{ setCenter }}" class="dfin dfin-o hiw-center" data-di="0" style="opacity:0;transition:opacity .8s ease;position:absolute;top:54%;left:50%;width:1100px;height:1100px;display:flex;align-items:center;justify-content:center;z-index:10;">
+
+        <!-- EXPERIMENT: floating circles around the phone; filled and outlined, mixed
+             (own layer under the orbit and phone; script mirrors the phone's
+             transform onto it). phone-local px, each keeps a clear gap from the phone -->
+        <div class="hiw-dots-wrap" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:318px;height:659px;margin:-329.5px 0 0 -159px;z-index:0;pointer-events:none;">
+          <svg width="0" height="0" style="position:absolute;">
+            <defs>
+              <linearGradient id="hiwDotFill" x1="0.3" y1="0" x2="0.7" y2="1"><stop offset="0" stop-color="#E72B15"></stop><stop offset="1" stop-color="#EF8A3D"></stop></linearGradient>
+            </defs>
+          </svg>
+          <svg class="hiw-dot" viewBox="0 0 42 42" style="left:359px;top:83px;width:42px;height:42px;animation-duration:6.8s;animation-delay:0s;"><circle cx="21" cy="21" r="15.25" fill="none" stroke="url(#hiwDotFill)" stroke-width="3.5"></circle></svg>
+          <svg class="hiw-dot" viewBox="0 0 78 78" style="left:363px;top:137px;width:78px;height:78px;animation-duration:7.6s;animation-delay:-2.6s;"><circle cx="39" cy="39" r="35" fill="url(#hiwDotFill)"></circle></svg>
+          <svg class="hiw-dot" viewBox="0 0 60 60" style="left:342px;top:568px;width:60px;height:60px;animation-duration:6.2s;animation-delay:-4.4s;"><circle cx="30" cy="30" r="26" fill="url(#hiwDotFill)"></circle></svg>
+          <svg class="hiw-dot" viewBox="0 0 100 100" style="left:-130px;top:268px;width:100px;height:100px;animation-duration:8.2s;animation-delay:-1.2s;"><circle cx="50" cy="50" r="44.25" fill="none" stroke="url(#hiwDotFill)" stroke-width="3.5"></circle></svg>
+          <svg class="hiw-dot" viewBox="0 0 40 40" style="left:-60px;top:372px;width:40px;height:40px;animation-duration:6.6s;animation-delay:-3.5s;"><circle cx="20" cy="20" r="16" fill="url(#hiwDotFill)"></circle></svg>
+        </div>
 
         <!-- dashed rings -->
         <svg ref="{{ setRings }}" class="hiw-rings" viewBox="0 0 1100 1100" style="position:absolute;width:100%;height:100%;pointer-events:none;overflow:visible;">
@@ -1899,7 +1972,10 @@ class Component extends DCLogic {
         lift = (mid - (expTop + bandBottom) / 2) / sFit;
       }
       this.phoneK = k;
-      if (phone && phone.parentElement) phone.parentElement.style.transform = k === 1 ? '' : `translateY(${(-lift).toFixed(1)}px) scale(${k.toFixed(3)}) rotate(2deg)`;
+      const phoneT = k === 1 ? '' : `translateY(${(-lift).toFixed(1)}px) scale(${k.toFixed(3)}) rotate(2deg)`;
+      if (phone && phone.parentElement) phone.parentElement.style.transform = phoneT;
+      const dots = this.centerEl.querySelector('.hiw-dots-wrap');
+      if (dots) dots.style.transform = phoneT;
       const midPct = (mid / vh) * 100;
       this.centerEl.style.top = midPct.toFixed(2) + '%';
       this.centerEl.style.transform = `translate(-50%,-50%) scale(${sFit})`;
