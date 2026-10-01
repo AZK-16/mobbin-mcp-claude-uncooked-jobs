@@ -612,14 +612,12 @@
   }
 
   /* FAQ: native <details>/<summary>, so it opens without JS and is keyboard
-     operable out of the box. name="uc-faq" is what makes browsers enforce
-     one-open-at-a-time natively; componentDidMount repeats the rule in JS for
-     the browsers that don't support the attribute yet. all closed on load. */
+     operable out of the box. componentDidMount takes over the toggling to
+     animate each item's height and keep one open at a time. all closed on load. */
   .faq-list{width:min(760px,92vw);margin:clamp(30px,4.5vh,52px) auto 0;text-align:left;border-top:1px solid rgba(0,0,0,0.09);}
   .faq-item{border-bottom:1px solid rgba(0,0,0,0.09);}
-  .faq-q{list-style:none;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:clamp(17px,1.7vw,21px) 2px;font-weight:500;font-size:clamp(15px,1.25vw,17px);line-height:1.4;letter-spacing:-0.015em;color:#111;transition:color .2s;}
+  .faq-q{list-style:none;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:clamp(17px,1.7vw,21px) 2px;font-weight:500;font-size:clamp(15px,1.25vw,17px);line-height:1.4;letter-spacing:-0.015em;color:#111;}
   .faq-q::-webkit-details-marker{display:none;}
-  .faq-q:hover{color:#E62B15;}
   /* the chevron carries the only red in the section -- the headline stays plain,
      since this is the functional section, not an emotional one */
   .faq-chev{flex:none;display:flex;align-items:center;color:#E62B15;margin-top:2px;transition:transform .3s cubic-bezier(.22,.7,.3,1);}
@@ -1818,13 +1816,42 @@ class Component extends DCLogic {
     window.addEventListener('resize', this.onResize, { passive: true });
     // squares off the nav pill's bottom corners while the mobile dropdown is open,
     // so the two read as one continuous shape (see .site-nav.nav-open)
-    // name="uc-faq" already gives the accordion one-open-at-a-time in current
-    // browsers; this is the same rule for the ones that ignore the attribute, so
-    // two answers are never open together.
+    // FAQ accordion: each item's height animates open/closed instead of snapping.
+    // name="uc-faq" stays in the markup as the no-JS fallback but is removed here,
+    // since the browser's native exclusive mode would snap the other item shut;
+    // one-open-at-a-time is enforced below, with the other item closing smoothly.
     const faqItems = [...document.querySelectorAll('.faq-item')];
-    faqItems.forEach((item) => item.addEventListener('toggle', () => {
-      if (item.open) faqItems.forEach((other) => { if (other !== item) other.open = false; });
-    }));
+    const faqReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const faqAnimate = (item, opening) => {
+      item._target = opening;
+      const from = item.getBoundingClientRect().height;   // includes any in-flight animation
+      if (item._anim) item._anim.cancel();
+      const q = item.querySelector('.faq-q');
+      const a = item.querySelector('.faq-a');
+      if (opening) item.open = true;
+      const border = item.offsetHeight - item.clientHeight;
+      const to = opening ? item.offsetHeight : q.offsetHeight + border;
+      item.style.overflow = 'hidden';
+      const anim = item.animate({ height: [from + 'px', to + 'px'] },
+        { duration: faqReduced ? 0 : 440, easing: 'cubic-bezier(.22,.7,.3,1)' });
+      if (!opening && a && !faqReduced) a.animate({ opacity: [1, 0] }, { duration: 220, easing: 'ease-out', fill: 'forwards' });
+      item._anim = anim;
+      anim.onfinish = () => {
+        item._anim = null; item.style.overflow = '';
+        if (!opening) { item.open = false; if (a) a.getAnimations().forEach((x) => x.cancel()); }
+      };
+    };
+    faqItems.forEach((item) => {
+      item.removeAttribute('name');
+      item.querySelector('.faq-q').addEventListener('click', (e) => {
+        e.preventDefault();
+        const opening = !(item._target != null ? item._target : item.open);
+        if (opening) faqItems.forEach((other) => {
+          if (other !== item && (other._target != null ? other._target : other.open)) faqAnimate(other, false);
+        });
+        faqAnimate(item, opening);
+      });
+    });
 
     const navMore = document.querySelector('.nav-more');
     if (navMore) navMore.addEventListener('toggle', () => {
