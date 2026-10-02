@@ -483,34 +483,24 @@
   /* early users: editorial quote cards. card reads top to bottom as avatar +
      track, then the quote, then attribution sitting on the card's floor behind
      a hairline. */
-  /* stroke + lift live here, not on the card: a mask clips its own element's
-     filter output, so a filter on .tmn was being erased at the card edge. the
-     grid isn't masked, and its only children are the three opaque cards, so the
-     four 1px offset shadows trace each card's notched silhouette and the fifth
-     casts the drop shadow from that outlined shape. */
-  .tmn-grid{filter:drop-shadow(1px 0 0 #E2E2E1) drop-shadow(-1px 0 0 #E2E2E1) drop-shadow(0 1px 0 #E2E2E1) drop-shadow(0 -1px 0 #E2E2E1) drop-shadow(0 4px 10px rgba(20,20,30,0.05));display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,1.9vw,28px);width:min(1160px,92vw);margin:clamp(38px,5.5vh,66px) auto 0;align-items:stretch;text-align:left;}
-  /* the paper grain lives on the cards only -- the page behind them is flat.
-     the tile is opaque and averages #fafafa, so it sets the card surface;
-     the colour below it is just the pre-load fallback. */
-  /* ticket shape: four radial gradients punch a 17px concave notch out of each
-     corner. the stroke and shadow can't live here -- a mask clips its own
-     element's filter output -- so they sit on .tmn-grid instead. */
+  .tmn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,1.9vw,28px);width:min(1160px,92vw);margin:clamp(38px,5.5vh,66px) auto 0;align-items:stretch;text-align:left;}
+  /* EXPERIMENT: paper grain and perforated divider removed; cards are flat #fff */
+  /* EXPERIMENT: plain rounded rectangles (were ticket-shaped with notched
+     corners); stroke and lift now sit on the card itself */
   .tmn{--pad:clamp(20px,1.9vw,26px);
-    display:flex;flex-direction:column;margin:0;height:100%;background:#fafafa url('uploads/paper-grain-tile.webp') 0 0 / 384px 384px repeat;border:0;padding:var(--pad);
-    -webkit-mask:radial-gradient(circle 17px at 0 0,transparent 98%,#000 100%) 0 0/51% 51% no-repeat,radial-gradient(circle 17px at 100% 0,transparent 98%,#000 100%) 100% 0/51% 51% no-repeat,radial-gradient(circle 17px at 0 100%,transparent 98%,#000 100%) 0 100%/51% 51% no-repeat,radial-gradient(circle 17px at 100% 100%,transparent 98%,#000 100%) 100% 100%/51% 51% no-repeat;
-    mask:radial-gradient(circle 17px at 0 0,transparent 98%,#000 100%) 0 0/51% 51% no-repeat,radial-gradient(circle 17px at 100% 0,transparent 98%,#000 100%) 100% 0/51% 51% no-repeat,radial-gradient(circle 17px at 0 100%,transparent 98%,#000 100%) 0 100%/51% 51% no-repeat,radial-gradient(circle 17px at 100% 100%,transparent 98%,#000 100%) 100% 100%/51% 51% no-repeat;
-}
+    display:flex;flex-direction:column;margin:0;height:100%;background:#fff;border:1px solid #E2E2E1;border-radius:20px;overflow:hidden;padding:var(--pad);
+    box-shadow:0 4px 10px rgba(20,20,30,0.05);}
   /* avatar left, track chip right */
   .tmn-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
   .tmn-avatar{flex:none;width:40px;height:40px;border-radius:50%;background:#f4f4f2;border:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;color:#b0b0b6;font-weight:700;font-size:13px;letter-spacing:-0.01em;overflow:hidden;}
   .tmn-avatar img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;}
   .tmn-track{display:inline-flex;align-items:center;gap:6px;flex:none;background:#fff;border:1px solid rgba(0,0,0,0.09);border-radius:100px;padding:7px 14px;font-weight:600;font-size:12px;letter-spacing:-0.01em;color:#3f3f46;white-space:nowrap;box-shadow:0 2px 5px -3px rgba(20,20,30,.16);}
-  /* line-height .6 crops the glyph's serif leading so it sits tight to the quote */
-  .tmn-mark{font-family:'Instrument Serif',serif;font-size:clamp(42px,4.1vw,57px);line-height:.6;letter-spacing:-0.02em;color:#E62B15;margin-top:clamp(22px,2.26vw,33px);}
-  /* flex:1 drops the rule + attribution to the card floor, so they line up
+  /* EXPERIMENT: quote marks 1/2/3.svg (one per card) replace the red serif “ glyph */
+  .tmn-mark{display:block;width:clamp(40px,2.8vw,40px);height:auto;margin-top:clamp(22px,2.26vw,33px);}
+  /* flex:1 drops the attribution to the card floor, so it lines up
      across the row however long each quote runs */
-  .tmn-bubble{flex:1;margin:clamp(-15px,-1.02vw,-13px) 0 0;font-weight:500;font-size:clamp(16px,1.35vw,19px);line-height:1.45;letter-spacing:-0.015em;color:#504E4E;text-wrap:pretty;}
-  .tmn-meta{display:flex;flex-direction:column;gap:3px;margin:clamp(16px,1.7vw,24px) calc(-1 * var(--pad)) 0;padding:clamp(19px,1.9vw,26px) var(--pad) 0;border-top:0;background:repeating-linear-gradient(to right,rgba(0,0,0,0.26) 0 9px,transparent 9px 20px) 0 0/100% 1px no-repeat;}
+  .tmn-bubble{flex:1;margin:clamp(12px,1vw,16px) 0 0;font-weight:500;font-size:clamp(16px,1.35vw,19px);line-height:1.45;letter-spacing:-0.015em;color:#504E4E;text-wrap:pretty;}
+  .tmn-meta{display:flex;flex-direction:column;gap:3px;margin:clamp(16px,1.7vw,24px) calc(-1 * var(--pad)) 0;padding:clamp(19px,1.9vw,26px) var(--pad) 0;border-top:0;}
   .tmn-name{font-weight:700;font-size:12.5px;letter-spacing:-0.015em;color:#111;}
   .tmn-context{font-weight:500;font-size:11.5px;line-height:1.45;color:#9a9aa0;}
   /* FAQ: the inverse of .sec-grid. the question column is min(760px,92vw)
@@ -573,14 +563,12 @@
     .tmn-deco{display:block;}
     /* clustered in the whitespace beside the title, then drifting down behind
        the cards -- the cards are opaque, so they only show in the gaps */
-    .dc-ga{left:51%;top:-2%;width:clamp(120px,10.5vw,186px);transform:rotate(-15deg);}
-    .dc-gb{left:74%;top:-8%;width:clamp(150px,13.5vw,238px);transform:rotate(10deg);}
-    .dc-gc{left:62%;top:33%;width:clamp(170px,15.5vw,272px);transform:rotate(-7deg);}
-    .dc-gd{left:96%;top:14%;width:clamp(130px,11.5vw,204px);transform:rotate(19deg);}
+    /* EXPERIMENT: speech bubbles (original black-stroke svg) replace the uncooked glyphs, all one size (matching .dc-ga), varied in tilt */
+    .dc-ga{left:51%;top:-2%;width:clamp(64px,5.6vw,98px);transform:rotate(-14deg);}
+    .dc-gb{left:73%;top:-6%;width:clamp(64px,5.6vw,98px);transform:scaleX(-1) rotate(-9deg);}
+    .dc-gd{left:95%;top:16%;width:clamp(64px,5.6vw,98px);transform:scaleX(-1) rotate(17deg);}
     .dc-sa{left:68%;top:10%;width:clamp(24px,2.2vw,38px);transform:rotate(0deg);}
-    .dc-sb{left:84%;top:46%;width:clamp(28px,2.6vw,45px);transform:rotate(14deg);}
     .dc-sc{left:101%;top:2%;width:clamp(20px,1.9vw,32px);transform:rotate(-12deg);}
-    .dc-sd{left:57%;top:62%;width:clamp(22px,2vw,34px);transform:rotate(8deg);}
     /* these two bracket the glyph bleeding off the right edge, which sits
        between 11% and 41% of the section height */
     .dc-se{left:95.5%;top:2%;width:clamp(21px,1.9vw,33px);transform:rotate(-9deg);}
@@ -589,7 +577,11 @@
        right edge and the existing cluster, which is ~9% wide at 1280px+ but
        collapses to ~4% by 901px as the heading block widens -- so they only
        appear where there is genuinely room for them. */
-    .dc-ge{left:40%;top:17%;width:clamp(68px,6.5vw,110px);transform:rotate(20deg);}
+    .dc-ge{left:40%;top:18%;width:clamp(64px,5.6vw,98px);transform:rotate(-22deg);}
+    /* EXPERIMENT: phone icons dropped into the open gaps between the bubbles and
+       stars, both facing right; sized to sit with the bubbles */
+    .dc-pa{left:53%;top:16%;width:clamp(45px,5.3vw,70px);transform:rotate(-12deg);}
+    .dc-pb{left:82.5%;top:10%;width:clamp(45px,5.3vw,70px);transform:rotate(12deg);}
     .dc-sg{left:44.5%;top:0%;width:clamp(20px,1.7vw,29px);transform:rotate(9deg);}
   }
   /* cards fade in one after another. the stagger lives here rather than in the
@@ -1539,24 +1531,27 @@
        real: the testimonial grid's last row leaves 18px of slack below its ink,
        which the mission section's sources line does not, so equal padding would
        look like an unequal gap. change this only alongside the mission padding. -->
-  <section data-screen-label="Early users" style="position:relative;padding:clamp(30px,5vh,70px) 24px calc(clamp(48px,15vh,190px) - 18px);display:flex;flex-direction:column;align-items:center;text-align:center;">
+  <!-- EXPERIMENT: top padding matches the belief-to-mission gap -->
+  <section data-screen-label="Early users" style="position:relative;padding:calc(clamp(16px,2vh,28px) + clamp(60px,19vh,240px) - clamp(48px,15vh,190px) - 2px) 24px calc(clamp(48px,15vh,190px) - 18px);display:flex;flex-direction:column;align-items:center;text-align:center;">
 
     <!-- barely-there brand glyphs behind the heading and cards. #EDEBE6 is
          baked into both SVGs, which is why no colour is set here. desktop and
          tablet only -- on a phone there is no spare whitespace to fill. -->
-    <div class="tmn-deco" aria-hidden="true">
-      <img class="dc-ga" src="uploads/uncooked glyph.svg" alt="">
-      <img class="dc-gb" src="uploads/uncooked glyph.svg" alt="">
-      <img class="dc-gc" src="uploads/uncooked glyph.svg" alt="">
-      <img class="dc-gd" src="uploads/uncooked glyph.svg" alt="">
+    <!-- EXPERIMENT: fades in with the section (dfin-o = opacity-only reveal, so the
+         illustrations keep their own rotations) -->
+    <div class="tmn-deco dfin dfin-o" data-di="0" aria-hidden="true" style="opacity:0;transition:opacity 1.2s ease;">
+      <img class="dc-ga" src="uploads/speech bubble.svg" alt="">
+      <img class="dc-gb" src="uploads/speech bubble.svg" alt="">
+      <img class="dc-gd" src="uploads/speech bubble.svg" alt="">
       <img class="dc-sa" src="uploads/star.svg" alt="">
-      <img class="dc-sb" src="uploads/star.svg" alt="">
       <img class="dc-sc" src="uploads/star.svg" alt="">
-      <img class="dc-sd" src="uploads/star.svg" alt="">
       <img class="dc-se" src="uploads/star.svg" alt="">
       <img class="dc-sf" src="uploads/star.svg" alt="">
-      <img class="dc-ge" src="uploads/uncooked glyph.svg" alt="">
+      <img class="dc-ge" src="uploads/speech bubble.svg" alt="">
       <img class="dc-sg" src="uploads/star.svg" alt="">
+      <!-- EXPERIMENT: phones in the open gaps -->
+      <img class="dc-pa" src="uploads/phone.svg" alt="">
+      <img class="dc-pb" src="uploads/phone.svg" alt="">
     </div>
 
     <div class="tmn-head">
@@ -1572,7 +1567,7 @@
           <span class="tmn-avatar"></span>
           <span class="tmn-track">[track]</span>
         </div>
-        <span class="tmn-mark" aria-hidden="true">“</span>
+        <img class="tmn-mark" src="uploads/quote marks 1.svg" alt="" aria-hidden="true">
         <blockquote class="tmn-bubble">didn't get the role. but I heard back in 5 days with an actual reason. first time that's ever happened. I'll be using it again.</blockquote>
         <figcaption class="tmn-meta">
           <span class="tmn-name">[first name]</span>
@@ -1587,7 +1582,7 @@
           <span class="tmn-avatar"></span>
           <span class="tmn-track">[track]</span>
         </div>
-        <span class="tmn-mark" aria-hidden="true">“</span>
+        <img class="tmn-mark" src="uploads/quote marks 2.svg" alt="" aria-hidden="true">
         <blockquote class="tmn-bubble">got the role. verified once, applied from my phone, had a call booked within the week.</blockquote>
         <figcaption class="tmn-meta">
           <span class="tmn-name">[first name]</span>
@@ -1602,7 +1597,7 @@
           <span class="tmn-avatar"></span>
           <span class="tmn-track">[track]</span>
         </div>
-        <span class="tmn-mark" aria-hidden="true">“</span>
+        <img class="tmn-mark" src="uploads/quote marks 3.svg" alt="" aria-hidden="true">
         <blockquote class="tmn-bubble">took me one evening to get verified. no CV, no cover letter, no rewriting my story 10 times.</blockquote>
         <figcaption class="tmn-meta">
           <span class="tmn-name">[first name]</span>
@@ -1622,7 +1617,8 @@
        list in question 2 is the same seven as the proof strip above, on purpose --
        if one list changes, change both. capped at 8: a new question means an old
        one comes out. -->
-  <section data-screen-label="FAQ" style="position:relative;isolation:isolate;padding:clamp(30px,5vh,70px) 24px clamp(90px,16vh,200px);display:flex;flex-direction:column;align-items:center;text-align:center;">
+  <!-- EXPERIMENT: top padding matches the belief-to-mission gap -->
+  <section data-screen-label="FAQ" style="position:relative;isolation:isolate;padding:calc(clamp(16px,2vh,28px) + clamp(60px,19vh,240px) - clamp(48px,15vh,190px) + 24px) 24px clamp(90px,16vh,200px);display:flex;flex-direction:column;align-items:center;text-align:center;">
     <div class="faq-grid" aria-hidden="true"></div>
 
 
